@@ -29,19 +29,24 @@ public static class ProgramRunner
     /// <summary>
     /// runs the pre-specified command in build.toml returns true if command is run and false if it couldnt find one
     /// </summary>
-    /// 
     public static bool TOMLArbitraryRun(string command, string[] args)
     {
         Tomlyn.Model.TomlTable toml = BlinkFS.GetTOML(BlinkFS.MakePathAbsoulute(@".\.blink\build.toml"));
         string commandToRun = (string)toml[command];
         string[] split = commandToRun.Split(" ");
+        string program = split[0];
 
+
+        List<string> newSplit = split.ToList();
+        newSplit.Remove(program);
+        split = newSplit.ToArray();
 
         for (int i = 0; i < split.Length; i++)
         {
             split[i] = BlinkFS.MakePathAbsoulute(split[i]);
         }
 
+        // combine the args from the toml specified command and if theres any more args provided add them
         string[] combinedArgs;
         if (args != null)
             combinedArgs = (string[])split.Concat(args);
@@ -49,9 +54,10 @@ public static class ProgramRunner
             combinedArgs = split;
 
 
-        if (BlinkFS.IsProgramInPath(split[0]))
+
+        if (BlinkFS.IsProgramInPath(program))
         {
-            string programOnPath = BlinkFS.GetProgramOnPathsPath(split[0]);
+            string programOnPath = BlinkFS.GetProgramOnPathsPath(program);
             StartProgram(programOnPath, combinedArgs);
             return true;
         }
@@ -59,13 +65,13 @@ public static class ProgramRunner
         {
             try
             {
-                StartProgram(split[0], combinedArgs);
+                StartProgram(program, combinedArgs);
                 return true;
 
             }
             catch (System.IO.FileNotFoundException e)
             {
-                Console.WriteLine($"{split[0]} Is not in the build.toml or on the path!");
+                Console.WriteLine($"{program} Is not in the build.toml or on the path!");
                 return false;
             }
         }        

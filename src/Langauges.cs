@@ -45,7 +45,6 @@ public static class LanguageSupport
             {
                 case Language.Python:
                     string[] args = { (string)toml["pythonHome"] };
-                    Console.WriteLine($"{(string)toml["pythonHome"]} THIS IS THE VAR WTF");
                     ProgramRunner.StartProgram((string)toml["pythonEnv"], args);
                     break;
                 case Language.Rust:
