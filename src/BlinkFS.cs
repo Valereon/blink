@@ -7,7 +7,12 @@ using Tomlyn;
 static class BlinkFS
 {
     public static string fileSystemRoot = @"D:\Github\GitHub\BlinkOS\";
+    public static string configToml = @".\.blink\config.toml";
+    public static string buildToml = @".\.blink\build.toml";
+
     public static List<string> filesOnPath = new();
+
+    static Tomlyn.Model.TomlTable pathToml;
 
 
 
@@ -134,13 +139,14 @@ static class BlinkFS
 
     public static bool IsProgramInPath(string program)
     {
+
         foreach (string file in filesOnPath)
         {
-            
             string[] split = file.Split(@"\");
-            Console.WriteLine(split[split.Length - 1]);
-            Console.WriteLine(program);
-            if (program.Equals(split[split.Length - 1]))
+
+            program = TryRemoveExeEnding(program);
+
+            if (program.Equals(TryRemoveExeEnding(split[split.Length - 1])))
                 return true;
         }
         return false;
@@ -152,7 +158,10 @@ static class BlinkFS
         foreach (string file in filesOnPath)
         {
             string[] split = file.Split(@"\");
-            if (program.Equals(split[split.Length - 1]))
+
+            program = TryRemoveExeEnding(program);
+
+            if (program.Equals(TryRemoveExeEnding(split[split.Length - 1])))
                 return file;
         }
         return null;
@@ -167,16 +176,17 @@ static class BlinkFS
     {
         //TODO: FIX THIS there is a type
         // i hate to use var here but they did not provide a type??? in the TOML lib
-        var model = GetTOML(@"\.blink\config.toml");
+        var model = GetTOML(configToml);
+        pathToml = model;
+
         Tomlyn.Model.TomlArray path = (Tomlyn.Model.TomlArray)model["path"];
         List<string> pathVars = path.Select(x => x.ToString()).ToList();
-        pathVars.ForEach(Console.WriteLine);
         filesOnPath = pathVars;
     }
-    public static void PutPathToTOML(Tomlyn.Model.TomlTable tomlModel, string tomlPath)
+    public static void PutPathToTOML()
     {
-        tomlModel["path"] = filesOnPath;
-        PutTOML(tomlModel, tomlPath);
+        pathToml["path"] = filesOnPath;
+        PutTOML(pathToml, configToml);
     }
 
 
@@ -201,9 +211,9 @@ static class BlinkFS
     {
         return array.Select(x => x.ToString()).ToList();
     }
-    
 
-    
+
+
     /// <summary>
     /// This will take any path including relative paths clean them and turn them absoulute including ".\" "\" or "erg"
     /// </summary>
@@ -231,6 +241,36 @@ static class BlinkFS
         {
             return fileSystemRoot + path;
         }
+    }
+
+    /// <summary>
+    /// Takes an absoulute path and returns a path releative to the root of the project.
+    /// used for the paths in config.toml
+    /// </summary>
+    public static string MakePathRelative(string path)
+    {
+        if (path.Contains(fileSystemRoot))
+        {
+
+            path.Replace(fileSystemRoot, @".\");
+            return path;
+
+        }
+        else
+        {
+            return @".\" + path;
+        }
+    }
+
+    public static string TryRemoveExeEnding(string path)
+    {
+        if (path.EndsWith(".exe"))
+        {
+            return path.Replace(".exe", "");
+        }
+
+
+        return path;        
     }
 
 }

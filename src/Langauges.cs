@@ -34,7 +34,7 @@ public static class LanguageSupport
 
     public static void EnableEnvVarsForIncludedLangs()
     {
-        Tomlyn.Model.TomlTable toml = BlinkFS.GetTOML(@".\.blink\config.toml");
+        Tomlyn.Model.TomlTable toml = BlinkFS.GetTOML(BlinkFS.configToml);
         Tomlyn.Model.TomlArray langs = (Tomlyn.Model.TomlArray)toml["langsInProject"];
         List<string> listOfLangs = BlinkFS.TOMLArrayToList(langs);
         
@@ -44,7 +44,9 @@ public static class LanguageSupport
             switch (enumLang)
             {
                 case Language.Python:
-                    ProgramRunner.StartProgram((string)toml["pythonEnv"]);
+                    string[] args = { (string)toml["pythonHome"] };
+                    Console.WriteLine($"{(string)toml["pythonHome"]} THIS IS THE VAR WTF");
+                    ProgramRunner.StartProgram((string)toml["pythonEnv"], args);
                     break;
                 case Language.Rust:
                     return;
