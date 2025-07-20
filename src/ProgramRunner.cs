@@ -15,30 +15,36 @@ public static class ProgramRunner
     /// <summary>
     /// makes arguments absoulute paths for sake of robustness can either take a string of args or an array of args
     /// </summary>
-    public static string[] PrepareArguments(string commands)
+    public static string[] PrepareArguments(string arguments)
     {
-        if (commands == null)
+        if (arguments == null)
             return null;
 
-        string[] arguments = commands.Split(" ");
+        string[] splitArgs = arguments.Split(" ");
 
         for (int i = 0; i < arguments.Length; i++)
         {
+            //flags handling
+            if (splitArgs[i].Contains("--"))
+                continue;
+            splitArgs[i] = BlinkFS.MakePathAbsoulute(splitArgs[i]);
+        }
+        return splitArgs;
+    }
+    
+    public static string[] PrepareArguments(string[] arguments)
+    {
+        if (arguments == null)
+            return null;
+
+        for (int i = 0; i < arguments.Length; i++)
+        {
+            //flags handling
+            if (arguments[i].Contains("--"))
+                continue;
             arguments[i] = BlinkFS.MakePathAbsoulute(arguments[i]);
         }
         return arguments;
-    }
-    
-    public static string[] PrepareArguments(string[] commands)
-    {
-        if (commands == null)
-            return null;
-
-        for (int i = 0; i < commands.Length; i++)
-        {
-            commands[i] = BlinkFS.MakePathAbsoulute(commands[i]);
-        }
-        return commands;
     }
 
     /// <summary>
@@ -104,7 +110,12 @@ public static class ProgramRunner
 
         }
 
-        if (BlinkFS.IsProgramInPath(name))
+        // if a program has .\ or ./ it will run the version specified instead of the path version
+        if (name.Contains(@".\") || name.Contains(@"./"))
+        {
+            name = BlinkFS.MakePathAbsoulute(name);
+        }
+        else if (BlinkFS.IsProgramInPath(name))
         {
             name = BlinkFS.GetProgramOnPathsFilePath(name);
         }
