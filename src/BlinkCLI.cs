@@ -19,9 +19,8 @@ class BlinkCLI
             string currentPath = Directory.GetCurrentDirectory();
             BlinkFS.fileSystemRoot = currentPath;
             Directory.CreateDirectory(currentPath + @"\.blink");
-            Directory.CreateDirectory(currentPath + @"\.blink\cache");
             Directory.CreateDirectory(currentPath + @"\.blink\bin");
-            BlinkFS.WriteFile(currentPath + @"\.blink\config.toml", "");
+            BlinkFS.WriteFile(currentPath + @"\.blink\config.toml", ""); //TODO: have a base toml file to write to these things
             BlinkFS.WriteFile(currentPath + @"\.blink\build.toml", "");
         }
 
@@ -34,25 +33,22 @@ class BlinkCLI
         [CliArgument(Description = "The program you want to run in the blink environment")]
         public string Name { get; set; }
         [CliOption(Description = "The args you want to run the program with", Required =false)]
-        public string Args { get; set; }
+        public string[] Args { get; set; }
         public void Run()
         {
             InitDir();
             ProgramRunner.SetupEnv();
-            string[] seperatedArgs = null;
-            if (Args != null)
-            {
-                seperatedArgs = ProgramRunner.PrepareArguments(Args);
-            }
+            Args = ProgramRunner.PrepareArguments(Args);
+
 
             if (BlinkFS.IsProgramInPath(Name))
             {
-                ProgramRunner.StartProgram(Name, seperatedArgs);
+                ProgramRunner.StartProgram(Name, Args);
             }
             else
             {
                 // this will try and see if there is a command in build.toml and run it if there is
-                ProgramRunner.TOMLArbitraryRun(Name, seperatedArgs);
+                ProgramRunner.TOMLArbitraryRun(Name, Args);
             }
 
         }
@@ -68,13 +64,13 @@ class BlinkCLI
         {
             InitDir();
 
-            BlinkFS.GetPathFromTOML();
+            TOMLHandler.GetPathFromTOML();
             if (Path == null)
                 return;
 
 
             BlinkFS.AddProgramToPath(BlinkFS.MakePathRelative(Path));
-            BlinkFS.PutPathToTOML();
+            TOMLHandler.PutPathToTOML();
         }
     }
 

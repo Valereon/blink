@@ -7,14 +7,8 @@ using Tomlyn;
 static class BlinkFS
 {
     public static string fileSystemRoot = @"D:\Github\GitHub\BlinkOS\";
-    public static string configToml = @".\.blink\config.toml";
-    public static string buildToml = @".\.blink\build.toml";
 
-    public static List<string> filesOnPath = new();
-
-    static Tomlyn.Model.TomlTable pathToml;
-
-
+    public static List<string> path = new();
 
 
     public static void ExtractFileSystem(string zipPath, string extractPath)
@@ -43,7 +37,6 @@ static class BlinkFS
     {
         File.Delete(MakePathAbsoulute(filePath));
     }
-
 
 
     /// <summary>
@@ -140,7 +133,7 @@ static class BlinkFS
     public static bool IsProgramInPath(string program)
     {
 
-        foreach (string file in filesOnPath)
+        foreach (string file in path)
         {
             string[] split = file.Split(@"\");
 
@@ -152,10 +145,10 @@ static class BlinkFS
         return false;
     }
 
-    //TODO: make it so that you dont have to put file extensions for exes
-    public static string GetProgramOnPathsPath(string program)
+
+    public static string GetProgramOnPathsFilePath(string program)
     {
-        foreach (string file in filesOnPath)
+        foreach (string file in path)
         {
             string[] split = file.Split(@"\");
 
@@ -167,55 +160,20 @@ static class BlinkFS
         return null;
     }
 
+    public static void ReloadPath()
+    {
+        TOMLHandler.PutPathToTOML();
+        TOMLHandler.GetPathFromTOML();
+    }
+
     public static void AddProgramToPath(string program)
     {
-        filesOnPath.Add(program);
-    }
-
-    public static void GetPathFromTOML()
-    {
-        //TODO: FIX THIS there is a type
-        // i hate to use var here but they did not provide a type??? in the TOML lib
-        var model = GetTOML(configToml);
-        pathToml = model;
-
-        Tomlyn.Model.TomlArray path = (Tomlyn.Model.TomlArray)model["path"];
-        List<string> pathVars = path.Select(x => x.ToString()).ToList();
-        filesOnPath = pathVars;
-    }
-    public static void PutPathToTOML()
-    {
-        pathToml["path"] = filesOnPath;
-        PutTOML(pathToml, configToml);
-    }
-
-
+        path.Add(program);
+    }   
 
 
     /// <summary>
-    /// Gets the TOML using the absolute path
-    /// </summary>
-    public static Tomlyn.Model.TomlTable GetTOML(string path)
-    {
-        return Toml.ToModel(ReadFile(MakePathAbsoulute(path)));
-    }
-
-
-    public static void PutTOML(Tomlyn.Model.TomlTable tomlTable, string path)
-    {
-        string textTOML = Toml.FromModel(tomlTable);
-        WriteFile(MakePathAbsoulute(path), textTOML);
-    }
-
-    public static List<string> TOMLArrayToList(Tomlyn.Model.TomlArray array)
-    {
-        return array.Select(x => x.ToString()).ToList();
-    }
-
-
-
-    /// <summary>
-    /// This will take any path including relative paths clean them and turn them absoulute including ".\" "\" or "erg"
+    /// This will take any path including relative paths. Clean them and turn them absoulute including ".\" "\" or "python.exe"
     /// </summary>
     public static string MakePathAbsoulute(string path)
     {
@@ -230,8 +188,12 @@ static class BlinkFS
         }
         else
         {
-            return path;
+            if (IsProgramInPath(path))
+            {
+                return GetProgramOnPathsFilePath(path);
+            }
         }
+
 
         if (path.Contains(fileSystemRoot))
         {
@@ -239,6 +201,7 @@ static class BlinkFS
         }
         else
         {
+            // ??????? I DONT KNOW WHY THE FUCK Path.Combine() fucks this up so hard but this works great! i think it has to do with my logic above
             return fileSystemRoot + path;
         }
     }
@@ -251,10 +214,8 @@ static class BlinkFS
     {
         if (path.Contains(fileSystemRoot))
         {
-
             path.Replace(fileSystemRoot, @".\");
             return path;
-
         }
         else
         {
@@ -262,6 +223,9 @@ static class BlinkFS
         }
     }
 
+    /// <summary>
+    /// Trys to remove the exe ending from the path and if it cannot then it returns the original path
+    /// </summary>
     public static string TryRemoveExeEnding(string path)
     {
         if (path.EndsWith(".exe"))
@@ -269,8 +233,7 @@ static class BlinkFS
             return path.Replace(".exe", "");
         }
 
-
-        return path;        
+        return path;
     }
 
 }

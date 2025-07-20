@@ -9,9 +9,12 @@ public static class ProgramRunner
 {
     public static void SetupEnv()
     {
-        BlinkFS.GetPathFromTOML();
+        TOMLHandler.GetPathFromTOML();
         LanguageSupport.EnableEnvVarsForIncludedLangs();
     }
+    /// <summary>
+    /// makes arguments absoulute paths for sake of robustness can either take a string of args or an array of args
+    /// </summary>
     public static string[] PrepareArguments(string commands)
     {
         if (commands == null)
@@ -25,26 +28,33 @@ public static class ProgramRunner
         }
         return arguments;
     }
+    
+    public static string[] PrepareArguments(string[] commands)
+    {
+        if (commands == null)
+            return null;
+
+        for (int i = 0; i < commands.Length; i++)
+        {
+            commands[i] = BlinkFS.MakePathAbsoulute(commands[i]);
+        }
+        return commands;
+    }
 
     /// <summary>
     /// runs the pre-specified command in build.toml returns true if command is run and false if it couldnt find one
     /// </summary>
     public static bool TOMLArbitraryRun(string command, string[] args)
     {
-        Tomlyn.Model.TomlTable toml = BlinkFS.GetTOML(BlinkFS.MakePathAbsoulute(@".\.blink\build.toml"));
-        string commandToRun = (string)toml[command];
+        string commandToRun = (string)TOMLHandler.GetVarFromBuildTOML(command);
         string[] split = commandToRun.Split(" ");
         string program = split[0];
 
 
         List<string> newSplit = split.ToList();
         newSplit.Remove(program);
-        split = newSplit.ToArray();
-
-        for (int i = 0; i < split.Length; i++)
-        {
-            split[i] = BlinkFS.MakePathAbsoulute(split[i]);
-        }
+        split = PrepareArguments(newSplit.ToArray());
+        
 
         // combine the args from the toml specified command and if theres any more args provided add them
         string[] combinedArgs;
@@ -57,7 +67,7 @@ public static class ProgramRunner
 
         if (BlinkFS.IsProgramInPath(program))
         {
-            string programOnPath = BlinkFS.GetProgramOnPathsPath(program);
+            string programOnPath = BlinkFS.GetProgramOnPathsFilePath(program);
             StartProgram(programOnPath, combinedArgs);
             return true;
         }
@@ -74,7 +84,7 @@ public static class ProgramRunner
                 Console.WriteLine($"{program} Is not in the build.toml or on the path!");
                 return false;
             }
-        }        
+        }
     }
 
 
@@ -96,7 +106,7 @@ public static class ProgramRunner
 
         if (BlinkFS.IsProgramInPath(name))
         {
-            name = BlinkFS.GetProgramOnPathsPath(name);
+            name = BlinkFS.GetProgramOnPathsFilePath(name);
         }
 
         Process proc = new Process
@@ -115,7 +125,6 @@ public static class ProgramRunner
         };
 
         proc.Start();
-        Console.WriteLine("proc has started");
 
         proc.OutputDataReceived += (sender, e) =>
         {
@@ -135,10 +144,10 @@ public static class ProgramRunner
         while (!proc.HasExited)
         {
             // string input = Console.ReadLine();
-            if (!proc.HasExited)
-            {
+            // if (!proc.HasExited)
+            // {
                 // proc.StandardInput.WriteLine(input);
-            }
+            // }
             // if (input == null)
                 // continue;
         }
