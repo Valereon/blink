@@ -22,25 +22,24 @@ public static class ProgramRunner
 
         string[] splitArgs = arguments.Split(" ");
 
-        for (int i = 0; i < arguments.Length; i++)
-        {
-            //flags handling
-            if (splitArgs[i].Contains("--"))
-                continue;
-            splitArgs[i] = BlinkFS.MakePathAbsoulute(splitArgs[i]);
-        }
-        return splitArgs;
+        return MakeArgsAbsoulute(splitArgs);
     }
-    
+
     public static string[] PrepareArguments(string[] arguments)
     {
         if (arguments == null)
             return null;
 
+
+        return MakeArgsAbsoulute(arguments);
+    }
+
+    static string[] MakeArgsAbsoulute(string[] arguments)
+    {
         for (int i = 0; i < arguments.Length; i++)
         {
             //flags handling
-            if (arguments[i].Contains("--"))
+            if (arguments[i].Contains("--") || arguments[i].Contains("-")) 
                 continue;
             arguments[i] = BlinkFS.MakePathAbsoulute(arguments[i]);
         }
@@ -60,12 +59,12 @@ public static class ProgramRunner
         List<string> newSplit = split.ToList();
         newSplit.Remove(program);
         split = PrepareArguments(newSplit.ToArray());
-        
+
 
         // combine the args from the toml specified command and if theres any more args provided add them
         string[] combinedArgs;
         if (args != null)
-            combinedArgs = (string[])split.Concat(args);
+            combinedArgs = split.Concat(args).ToArray();
         else
             combinedArgs = split;
 
@@ -97,21 +96,20 @@ public static class ProgramRunner
     /// <summary>
     ///  Starts a program given the args going [nameOfProgram, arg1,arg2,arg3] and pipes the in,out,and errors into the Blinkshell
     /// </summary>
-    public static void StartProgram(string name, string[] args = null)
+    public static void StartProgram(string name, string[] args)
     {
 
-        string combinedArgs = null;
+        string combinedArgs = "";
         if (args != null)
         {
             for (int i = 0; i < args.Length; i++)
             {
                 combinedArgs += $" {args[i]}";
             }
-
         }
 
         // if a program has .\ or ./ it will run the version specified instead of the path version
-        if (name.Contains(@".\") || name.Contains(@"./"))
+        if (name.Contains(Config.PathSeperator))
         {
             name = BlinkFS.MakePathAbsoulute(name);
         }
@@ -157,10 +155,10 @@ public static class ProgramRunner
             // string input = Console.ReadLine();
             // if (!proc.HasExited)
             // {
-                // proc.StandardInput.WriteLine(input);
+            // proc.StandardInput.WriteLine(input);
             // }
             // if (input == null)
-                // continue;
+            // continue;
         }
     }
 }

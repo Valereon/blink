@@ -7,14 +7,14 @@ static class TOMLHandler
 
     public static void GetPathFromTOML()
     {
-        Tomlyn.Model.TomlArray path = (Tomlyn.Model.TomlArray)GetVarFromConfigTOML(ConfigKeys.Path);
+        Tomlyn.Model.TomlArray path = (Tomlyn.Model.TomlArray)GetVarFromConfigTOML(Config.Path);
         List<string> pathVars = path.Select(x => x.ToString()).ToList();
         BlinkFS.path = pathVars;
     }
     public static void PutPathToTOML()
     {
         Tomlyn.Model.TomlTable toml = GetConfigTOML();
-        toml[ConfigKeys.Path] = BlinkFS.path;
+        toml[Config.Path] = BlinkFS.path;
         PutTOML(toml, configToml);
     }
     /// <summary>

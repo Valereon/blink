@@ -1,11 +1,11 @@
-public static class ConfigKeys
+public static class Config
 {
 
     public const string Path = "path";
     public const string LangsInProject = "langsInProject";
+    public const string FileSystemRoot = "fileSystemRoot";
 
-
-
+    public const string PathSeperator = @"\";
 
 
     //python

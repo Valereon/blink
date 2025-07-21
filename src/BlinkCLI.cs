@@ -17,7 +17,13 @@ class BlinkCLI
         public void Run()
         {
             string currentPath = Directory.GetCurrentDirectory();
+            Tomlyn.Model.TomlTable root = TOMLHandler.GetConfigTOML();
+            root[Config.FileSystemRoot] = currentPath;
+            TOMLHandler.PutTOML(root, TOMLHandler.configToml);
+
+        
             BlinkFS.fileSystemRoot = currentPath;
+
             Directory.CreateDirectory(currentPath + @"\.blink");
             Directory.CreateDirectory(currentPath + @"\.blink\bin");
             BlinkFS.WriteFile(currentPath + @"\.blink\config.toml", ""); //TODO: have a base toml file to write to these things
@@ -36,7 +42,7 @@ class BlinkCLI
         public string[] Args { get; set; }
         public void Run()
         {
-            InitDir();
+            LoadFileSystemRoot();
             ProgramRunner.SetupEnv();
             Args = ProgramRunner.PrepareArguments(Args);
 
@@ -62,7 +68,7 @@ class BlinkCLI
 
         public void Run()
         {
-            InitDir();
+            LoadFileSystemRoot();
 
             TOMLHandler.GetPathFromTOML();
             if (Path == null)
@@ -83,10 +89,11 @@ class BlinkCLI
     }
 
 
-    public static void InitDir()
+    public static void LoadFileSystemRoot()
     {
-        string currentPath = Directory.GetCurrentDirectory();
-        BlinkFS.fileSystemRoot = currentPath;
+        BlinkFS.fileSystemRoot = Directory.GetCurrentDirectory();
+        string root = (string)TOMLHandler.GetVarFromConfigTOML(Config.FileSystemRoot);
+        BlinkFS.fileSystemRoot = root;
     }
 
 }

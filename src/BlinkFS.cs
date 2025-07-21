@@ -1,4 +1,7 @@
+using System.CommandLine;
+using System.Diagnostics;
 using System.IO.Compression;
+using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
 using Microsoft.VisualBasic;
 using Tomlyn;
@@ -6,136 +9,111 @@ using Tomlyn;
 
 static class BlinkFS
 {
-    public static string fileSystemRoot = @"D:\Github\GitHub\BlinkOS\";
+    public static string fileSystemRoot;
 
     public static List<string> path = new();
 
 
     public static void ExtractFileSystem(string zipPath, string extractPath)
     {
-        ZipFile.ExtractToDirectory(zipPath, extractPath);
-        fileSystemRoot = extractPath;
+        try
+        {
+            ZipFile.ExtractToDirectory(zipPath, extractPath);
+            fileSystemRoot = extractPath;
+        }
+        catch (FileNotFoundException)
+        {
+            Console.WriteLine($"File {zipPath} Does not exist");
+        }
+        catch (UnauthorizedAccessException)
+        {
+            Console.WriteLine($"Could not read {zipPath} Permission denied");
+        }
+        catch (IOException e)
+        {
+            Console.WriteLine($"Error IOException {e}");
+        }
     }
 
     public static void ZipFileSystem(string zipToPath)
     {
-        ZipFile.CreateFromDirectory(fileSystemRoot, zipToPath);
+        try
+        {
+            ZipFile.CreateFromDirectory(fileSystemRoot, zipToPath);
+        }
+        catch (IOException e)
+        {
+            Console.WriteLine($"Error IOException {e}");
+        }
     }
 
 
     public static string ReadFile(string filePath)
     {
-        return File.ReadAllText(MakePathAbsoulute(filePath));
+        try
+        {
+            return File.ReadAllText(MakePathAbsoulute(filePath));
+        }
+        catch (FileNotFoundException)
+        {
+            throw new FileNotFoundException($"Could not read File, {filePath} Does not exist");
+        }
+        catch (UnauthorizedAccessException)
+        {
+            throw new UnauthorizedAccessException($"Could not read {filePath} Permission denied");
+        }
+        catch (IOException e)
+        {
+            throw new IOException($"Error IOException {e}");
+        }
     }
 
-    public static void WriteFile(string filepath, string text)
+    public static void WriteFile(string filePath, string text)
     {
-        File.WriteAllText(MakePathAbsoulute(filepath), text);
+        try
+        {
+            File.WriteAllText(MakePathAbsoulute(filePath), text);
+
+        }
+        catch (FileNotFoundException)
+        {
+            throw new FileNotFoundException($"could not write to File, {filePath} Does not exist");
+        }
+        catch (UnauthorizedAccessException)
+        {
+            throw new UnauthorizedAccessException($"Could not write {filePath} Permission denied");
+        }
+        catch (IOException e)
+        {
+            throw new IOException($"Error IOException {e}");
+        }
     }
 
     public static void DeleteFile(string filePath)
     {
-        File.Delete(MakePathAbsoulute(filePath));
-    }
-
-
-    /// <summary>
-    /// Gets the files in the directory and returns their full filepaths and will NOT return directories
-    /// </summary>
-    public static string[] GetFilesInDirectory(string directoryPath)
-    {
-        string[] filePaths = Directory.GetFiles(directoryPath);
-        filePaths = SortFilesAndFolders(filePaths);
-        return filePaths;
-    }
-
-    /// <summary>
-    /// Gets the files in the directory and returns their full filepaths and WILL return directories
-    /// </summary>
-    public static string[] GetFilesAndFoldersInDirectory(string directoryPath)
-    {
-        string[] filePaths = Directory.GetFileSystemEntries(directoryPath, "*", SearchOption.TopDirectoryOnly);
-        filePaths = SortFilesAndFolders(filePaths);
-        return filePaths;
-    }
-
-    /// <summary>
-    /// Gets the files in the directory and returns their names i.e. Sample.txt this will NOT return directories
-    /// </summary>
-    public static string[] GetFilesInDirectoryWithoutPaths(string directoryPath)
-    {
-        string[] filePaths = Directory.GetFiles(directoryPath);
-        filePaths = SortFilesAndFolders(filePaths);
-        for (int i = 0; i < filePaths.Length; i++)
+        try
         {
-            filePaths[i] = filePaths[i].Replace(directoryPath, "");
+            File.Delete(MakePathAbsoulute(filePath));
         }
-        return filePaths;
-    }
-
-    /// <summary>
-    /// Gets the files in the directory and returns their full filepaths and WILL return directories
-    /// </summary>
-    public static string[] GetFilesAndFoldersInDirectoryWithoutPaths(string directoryPath)
-    {
-        string[] filePaths = Directory.GetFileSystemEntries(directoryPath, "*", SearchOption.TopDirectoryOnly);
-        filePaths = SortFilesAndFolders(filePaths);
-
-        for (int i = 0; i < filePaths.Length; i++)
+        catch (FileNotFoundException)
         {
-            filePaths[i] = filePaths[i].Replace(directoryPath, "");
+            throw new FileNotFoundException($"could not delete File, {filePath} Does not exist");
         }
-        return filePaths;
-    }
-
-    /// <summary>
-    /// Takes a list of files and directories and sorts them so the folders are on top and files are alphabetical
-    /// </summary>
-    public static string[] SortFilesAndFolders(string[] files)
-    {
-        List<string> sortedfolders = new();
-        List<string> sortedFiles = new();
-
-        for (int i = 0; i < files.Length; i++)
+        catch (UnauthorizedAccessException)
         {
-            FileAttributes attributes = File.GetAttributes(files[i]);
-
-            if (attributes.HasFlag(FileAttributes.Directory))
-            {
-                sortedfolders.Add(files[i]);
-
-            }
-            else
-            {
-                sortedFiles.Add(files[i]);
-            }
+            throw new UnauthorizedAccessException($"Could not delete {filePath} Permission denied");
         }
-
-        if (sortedfolders.Count == 0)
+        catch (IOException e)
         {
-            sortedFiles.Sort();
-            return sortedFiles.ToArray();
+            throw new IOException($"Error IOException {e}");
         }
-        if (sortedFiles.Count == 0)
-        {
-            sortedfolders.Sort();
-            return sortedfolders.ToArray();
-        }
-
-        sortedfolders.Sort();
-        sortedFiles.Sort();
-
-        sortedfolders.AddRange(sortedFiles);
-
-        return sortedfolders.ToArray();
     }
 
     public static bool IsProgramInPath(string program)
     {
-
         foreach (string file in path)
         {
-            string[] split = file.Split(@"\");
+            string[] split = file.Split(Config.PathSeperator);
 
             program = TryRemoveExeEnding(program);
 
@@ -150,7 +128,7 @@ static class BlinkFS
     {
         foreach (string file in path)
         {
-            string[] split = file.Split(@"\");
+            string[] split = file.Split(Config.PathSeperator);
 
             program = TryRemoveExeEnding(program);
 
@@ -169,7 +147,7 @@ static class BlinkFS
     public static void AddProgramToPath(string program)
     {
         path.Add(program);
-    }   
+    }
 
 
     /// <summary>
@@ -177,13 +155,15 @@ static class BlinkFS
     /// </summary>
     public static string MakePathAbsoulute(string path)
     {
+        if (path == null)
+            throw new Exception("Path is null in MakePathAbsolute");
 
         //crude path check
-        if (path.Contains(@"\"))
+        if (path.Contains(Config.PathSeperator))
         {
-            if (path.Contains(@".\"))
+            if (path.Contains($@".{Config.PathSeperator}"))
             {
-                path = Regex.Replace(path, @"\.\\", @"\");
+                path = Regex.Replace(path, @"\.[/\\]", Config.PathSeperator);
             }
         }
         else
@@ -214,12 +194,11 @@ static class BlinkFS
     {
         if (path.Contains(fileSystemRoot))
         {
-            path.Replace(fileSystemRoot, @".\");
-            return path;
+            return path.Replace(fileSystemRoot, @$".{Config.PathSeperator}");
         }
         else
         {
-            return @".\" + path;
+            return $@".{Config.PathSeperator}{path}";
         }
     }
 

@@ -1,2 +1,2 @@
 # blink
-a cross langauge system for reproduciable dev enviroments
+a cross language system for reproducible dev environments

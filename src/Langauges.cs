@@ -35,7 +35,7 @@ public static class LanguageSupport
     public static void EnableEnvVarsForIncludedLangs()
     {
 
-        Tomlyn.Model.TomlArray langs = (Tomlyn.Model.TomlArray)TOMLHandler.GetVarFromConfigTOML(ConfigKeys.LangsInProject);
+        Tomlyn.Model.TomlArray langs = (Tomlyn.Model.TomlArray)TOMLHandler.GetVarFromConfigTOML(Config.LangsInProject);
         List<string> listOfLangs = TOMLHandler.TOMLArrayToList(langs);
 
         foreach (string lang in listOfLangs)
@@ -44,8 +44,8 @@ public static class LanguageSupport
             switch (enumLang)
             {
                 case Language.Python:
-                    string[] args =  {(string)TOMLHandler.GetVarFromConfigTOML(ConfigKeys.PythonHome)};
-                    string command = (string)TOMLHandler.GetVarFromConfigTOML(ConfigKeys.PythonEnv);
+                    string[] args =  {(string)TOMLHandler.GetVarFromConfigTOML(Config.PythonHome)};
+                    string command = (string)TOMLHandler.GetVarFromConfigTOML(Config.PythonEnv);
                     ProgramRunner.StartProgram(command, args);
                     break;
                 case Language.Rust:
