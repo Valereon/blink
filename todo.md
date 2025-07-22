@@ -19,3 +19,5 @@ add ovveride args for all commands
 
 - add flag to turn on and off debug statements
 - fix multi arg commands like "r python --args .\src\args.py "hello" 21" dont work
+
+- add a filesystem integrity check on every run to make sure core things like build.toml or config.toml arent missing or the .blink folder
