@@ -76,13 +76,40 @@ In build.toml you can define your own commands as easily as adding a new entry
 and you just run `blink run build` or `blink run run` you can name these commands anything you want. All you have to do is save the build.toml and they will work.
 
 
-
-
-
-
-
-
 ## Getting Specific Language Version runtimes
 this will add that specified languages latest runtime and latest package manager to the blink environment
     - if you want to add a specified version of the language do <code>blink lang add python@3.9 </code>
 
+
+
+
+
+# Langauge Specific Quirks
+## Python
+so in python you can use pip normally with `blink r pip install numpy` and you can do normal pip still as well as uninstall but you have to use the pip provided by blink for blink to work. So the structure of the blink files i tried to keep the same such as 
+
+- .blink\
+    - bin\
+        - python\
+            - bin\
+            - cache\
+
+but because of how this standalone pip version works i cannot change where the packages install without loosing major functionality so the cache folder will remain which is normally where the packages would go but for python it will be more like
+
+ 
+- python\
+    - lib\
+        - sitePackages\
+            - packages
+    - scripts\
+        - scripts
+<br>
+<br>
+
+
+
+
+the rest will be the python runtime binary in this folder
+
+
+this doesnt really affect the end user as they are not likely to be doing stuff in this folder manually but its good to know

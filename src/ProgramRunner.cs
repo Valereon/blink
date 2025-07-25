@@ -1,9 +1,5 @@
-using System.Collections;
+using System.ComponentModel;
 using System.Diagnostics;
-using System.Linq.Expressions;
-using System.Reflection.Metadata.Ecma335;
-using System.Text.RegularExpressions;
-using Tomlyn;
 
 public static class ProgramRunner
 {
@@ -34,12 +30,13 @@ public static class ProgramRunner
         return MakeArgsAbsoulute(arguments);
     }
 
+
     static string[] MakeArgsAbsoulute(string[] arguments)
     {
         for (int i = 0; i < arguments.Length; i++)
         {
-            //flags handling
-            if (arguments[i].Contains("--") || arguments[i].Contains("-")) 
+            //no file extension so skip. its an argument
+            if (!arguments[i].Contains("."))
                 continue;
             arguments[i] = BlinkFS.MakePathAbsoulute(arguments[i]);
         }
@@ -94,7 +91,7 @@ public static class ProgramRunner
 
 
     /// <summary>
-    ///  Starts a program given the args going [nameOfProgram, arg1,arg2,arg3] and pipes the in,out,and errors into the Blinkshell
+    ///  Starts a program given the args going and pipes the in,out,and errors into the console
     /// </summary>
     public static void StartProgram(string name, string[] args)
     {
@@ -109,7 +106,7 @@ public static class ProgramRunner
         }
 
         // if a program has .\ or ./ it will run the version specified instead of the path version
-        if (name.Contains(Config.PathSeperator))
+        if (name.Contains("." + Config.PathSeperator))
         {
             name = BlinkFS.MakePathAbsoulute(name);
         }
@@ -126,7 +123,7 @@ public static class ProgramRunner
                 Arguments = $"{combinedArgs}",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
-                // RedirectStandardInput = true,
+                RedirectStandardInput = true,
                 RedirectStandardError = true,
                 CreateNoWindow = true
 
@@ -149,17 +146,30 @@ public static class ProgramRunner
         proc.BeginOutputReadLine();
         proc.BeginErrorReadLine();
 
-
-        while (!proc.HasExited)
+        var inputTask = Task.Run(() =>
         {
-            // string input = Console.ReadLine();
-            // if (!proc.HasExited)
-            // {
-            // proc.StandardInput.WriteLine(input);
-            // }
-            // if (input == null)
-            // continue;
-        }
+            while (!proc.HasExited)
+            {
+                try
+                {
+                    string? input = Console.ReadLine();
+                    if (!proc.HasExited && input != null)
+                    {
+                        proc.StandardInput.WriteLine(input);
+                        proc.StandardInput.Flush();
+                    }
+                }
+                catch (InvalidOperationException)
+                {
+                    break;
+                }
+            }
+        });
+
+        proc.WaitForExit();
+
+        inputTask.Wait(1000);
+
     }
 }
 

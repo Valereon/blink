@@ -1,11 +1,5 @@
-using System.CommandLine;
-using System.Diagnostics;
 using System.IO.Compression;
-using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
-using Microsoft.VisualBasic;
-using Tomlyn;
-
 
 static class BlinkFS
 {
@@ -33,6 +27,7 @@ static class BlinkFS
         {
             Console.WriteLine($"Error IOException {e}");
         }
+        Environment.Exit(1);
     }
 
     public static void ZipFileSystem(string zipToPath)
@@ -44,6 +39,7 @@ static class BlinkFS
         catch (IOException e)
         {
             Console.WriteLine($"Error IOException {e}");
+            Environment.Exit(1);
         }
     }
 
@@ -56,16 +52,18 @@ static class BlinkFS
         }
         catch (FileNotFoundException)
         {
-            throw new FileNotFoundException($"Could not read File, {filePath} Does not exist");
+            Console.WriteLine($"Could not read File, {filePath} Does not exist");
         }
         catch (UnauthorizedAccessException)
         {
-            throw new UnauthorizedAccessException($"Could not read {filePath} Permission denied");
+            Console.WriteLine($"Could not read {filePath} Permission denied");
         }
         catch (IOException e)
         {
-            throw new IOException($"Error IOException {e}");
+            Console.WriteLine($"Error IOException {e}");
         }
+        Environment.Exit(1);
+        return null;
     }
 
     public static void WriteFile(string filePath, string text)
@@ -73,19 +71,21 @@ static class BlinkFS
         try
         {
             File.WriteAllText(MakePathAbsoulute(filePath), text);
-
         }
         catch (FileNotFoundException)
         {
-            throw new FileNotFoundException($"could not write to File, {filePath} Does not exist");
+            Console.WriteLine($"could not write to File, {filePath} Does not exist");
+            Environment.Exit(1);
         }
         catch (UnauthorizedAccessException)
         {
-            throw new UnauthorizedAccessException($"Could not write {filePath} Permission denied");
+            Console.WriteLine($"Could not write {filePath} Permission denied");
+            Environment.Exit(1);
         }
         catch (IOException e)
         {
-            throw new IOException($"Error IOException {e}");
+            Console.WriteLine($"Error IOException {e}");
+            Environment.Exit(1);
         }
     }
 
@@ -97,15 +97,18 @@ static class BlinkFS
         }
         catch (FileNotFoundException)
         {
-            throw new FileNotFoundException($"could not delete File, {filePath} Does not exist");
+            Console.WriteLine($"could not delete File, {filePath} Does not exist");
+            Environment.Exit(1);
         }
         catch (UnauthorizedAccessException)
         {
-            throw new UnauthorizedAccessException($"Could not delete {filePath} Permission denied");
+            Console.WriteLine($"Could not delete {filePath} Permission denied");
+            Environment.Exit(1);
         }
         catch (IOException e)
         {
-            throw new IOException($"Error IOException {e}");
+            Console.WriteLine($"Error IOException {e}");
+            Environment.Exit(1);
         }
     }
 
@@ -156,7 +159,7 @@ static class BlinkFS
     public static string MakePathAbsoulute(string path)
     {
         if (path == null)
-            throw new Exception("Path is null in MakePathAbsolute");
+            Console.WriteLine("Path is null in MakePathAbsolute");
 
         //crude path check
         if (path.Contains(Config.PathSeperator))
@@ -213,6 +216,43 @@ static class BlinkFS
         }
 
         return path;
+    }
+
+    /// <summary>
+    /// Checks wether or not the file system root changed and if it did then to write that to the config.toml
+    /// </summary>
+    /// <returns>string updated root if updated otherwise root</returns>
+    public static string DidFileSystemRootChange(string root, string currentDir)
+    {
+        if (root != currentDir)
+        {
+            Console.WriteLine(Directory.GetDirectories(currentDir));
+            foreach (string entry in Directory.GetDirectories(currentDir))
+            {
+                if (entry.Contains(".blink"))
+                {
+                    root = currentDir;
+                    Tomlyn.Model.TomlTable config = TOMLHandler.GetConfigTOML();
+                    config[Config.FileSystemRoot] = currentDir;
+                    TOMLHandler.PutTOML(config, TOMLHandler.configTomlPath);
+                    return root;
+                }
+            }
+        }
+        return root;
+    }
+
+    public static void LoadFileSystemRoot()
+    {
+        string currentDir = Directory.GetCurrentDirectory();
+        fileSystemRoot = currentDir;
+
+        string root = (string)TOMLHandler.GetVarFromConfigTOML(Config.FileSystemRoot);
+
+        root = DidFileSystemRootChange(root, currentDir);
+        fileSystemRoot = root;
+
+        Config.UpdatePathSeperator();
     }
 
 }

@@ -1,10 +1,6 @@
-﻿
-
-
-
+﻿using System.Linq.Expressions;
 using DotMake.CommandLine;
-
-// BlinkFS.BlinkInit();
+using Microsoft.VisualBasic.FileIO;
 
 
 Cli.Run<BlinkCLI>(args);
@@ -14,14 +10,15 @@ class BlinkCLI
     [CliCommand(Description = "Inits a blink project in the current directory")]
     public class Init
     {
-        public void Run()
+        public void Run(CliContext context)
         {
+
             string currentPath = Directory.GetCurrentDirectory();
             Tomlyn.Model.TomlTable root = TOMLHandler.GetConfigTOML();
             root[Config.FileSystemRoot] = currentPath;
-            TOMLHandler.PutTOML(root, TOMLHandler.configToml);
+            TOMLHandler.PutTOML(root, TOMLHandler.configTomlPath);
 
-        
+
             BlinkFS.fileSystemRoot = currentPath;
 
             Directory.CreateDirectory(currentPath + @"\.blink");
@@ -38,22 +35,27 @@ class BlinkCLI
     {
         [CliArgument(Description = "The program you want to run in the blink environment")]
         public string Name { get; set; }
-        [CliOption(Description = "The args you want to run the program with", Required =false)]
+        [CliOption(Description = "The args you want to run the program with", Required = false, AllowMultipleArgumentsPerToken =true)]
         public string[] Args { get; set; }
         public void Run()
         {
-            LoadFileSystemRoot();
+            BlinkFS.LoadFileSystemRoot();
             ProgramRunner.SetupEnv();
+
+
             Args = ProgramRunner.PrepareArguments(Args);
+            Args = LanguageSupport.GetPackageManagerArgs(Name, Args);
 
-
+            foreach (string item in Args)
+            {
+                Console.WriteLine(item);
+            }
             if (BlinkFS.IsProgramInPath(Name))
             {
                 ProgramRunner.StartProgram(Name, Args);
             }
             else
             {
-                // this will try and see if there is a command in build.toml and run it if there is
                 ProgramRunner.TOMLArbitraryRun(Name, Args);
             }
 
@@ -68,7 +70,7 @@ class BlinkCLI
 
         public void Run()
         {
-            LoadFileSystemRoot();
+            BlinkFS.LoadFileSystemRoot();
 
             TOMLHandler.GetPathFromTOML();
             if (Path == null)
@@ -89,12 +91,9 @@ class BlinkCLI
     }
 
 
-    public static void LoadFileSystemRoot()
-    {
-        BlinkFS.fileSystemRoot = Directory.GetCurrentDirectory();
-        string root = (string)TOMLHandler.GetVarFromConfigTOML(Config.FileSystemRoot);
-        BlinkFS.fileSystemRoot = root;
-    }
+
+
+    
 
 }
 
