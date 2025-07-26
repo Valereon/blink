@@ -1,9 +1,12 @@
 using System.IO.Compression;
 using System.Text.RegularExpressions;
 
+/// <summary>
+/// Manages things releated to the .blink folder and the projects structure and integrity 
+/// </summary>
 static class BlinkFS
 {
-    public static string fileSystemRoot;
+    public static string fileSystemRoot = string.Empty;
 
     public static List<string> path = new();
 
@@ -18,16 +21,18 @@ static class BlinkFS
         catch (FileNotFoundException)
         {
             Console.WriteLine($"File {zipPath} Does not exist");
+            Environment.Exit(1);
         }
         catch (UnauthorizedAccessException)
         {
             Console.WriteLine($"Could not read {zipPath} Permission denied");
+            Environment.Exit(1);
         }
         catch (IOException e)
         {
             Console.WriteLine($"Error IOException {e}");
+            Environment.Exit(1);
         }
-        Environment.Exit(1);
     }
 
     public static void ZipFileSystem(string zipToPath)
@@ -43,12 +48,16 @@ static class BlinkFS
         }
     }
 
-
+    /// <summary>
+    /// reads a file tile the end, takes a path
+    /// </summary>
+    /// <param name="filePath"></param>
+    /// <returns></returns>
     public static string ReadFile(string filePath)
     {
         try
         {
-            return File.ReadAllText(MakePathAbsoulute(filePath));
+            return File.ReadAllText(MakePathAbsolute(filePath));
         }
         catch (FileNotFoundException)
         {
@@ -66,11 +75,16 @@ static class BlinkFS
         return null;
     }
 
+
+    /// <summary>
+    /// overwrites entire file with specified text
+    /// </summary>
     public static void WriteFile(string filePath, string text)
     {
         try
         {
-            File.WriteAllText(MakePathAbsoulute(filePath), text);
+            File.WriteAllText(MakePathAbsolute(filePath), text);
+            return;
         }
         catch (FileNotFoundException)
         {
@@ -93,7 +107,7 @@ static class BlinkFS
     {
         try
         {
-            File.Delete(MakePathAbsoulute(filePath));
+            File.Delete(MakePathAbsolute(filePath));
         }
         catch (FileNotFoundException)
         {
@@ -126,7 +140,11 @@ static class BlinkFS
         return false;
     }
 
-
+    /// <summary>
+    /// fetches the system path from the blink Env path of a specified program. returns string.empty if not on path
+    /// </summary>
+    /// <param name="program"></param>
+    /// <returns></returns>
     public static string GetProgramOnPathsFilePath(string program)
     {
         foreach (string file in path)
@@ -138,15 +156,14 @@ static class BlinkFS
             if (program.Equals(TryRemoveExeEnding(split[split.Length - 1])))
                 return file;
         }
-        return null;
+        return string.Empty;
     }
 
-    public static void ReloadPath()
-    {
-        TOMLHandler.PutPathToTOML();
-        TOMLHandler.GetPathFromTOML();
-    }
-
+    /// <summary>
+    /// simple add program to the current path and it only adds it to the instance path needs to be manually written to the TOML using TOMLHandler.PutPathTOML()
+    /// 
+    /// </summary>
+    /// <param name="program"></param>
     public static void AddProgramToPath(string program)
     {
         path.Add(program);
@@ -156,10 +173,10 @@ static class BlinkFS
     /// <summary>
     /// This will take any path including relative paths. Clean them and turn them absoulute including ".\" "\" or "python.exe"
     /// </summary>
-    public static string MakePathAbsoulute(string path)
+    public static string MakePathAbsolute(string path)
     {
         if (path == null)
-            Console.WriteLine("Path is null in MakePathAbsolute");
+            return string.Empty;
 
         //crude path check
         if (path.Contains(Config.PathSeperator))
@@ -185,12 +202,13 @@ static class BlinkFS
         else
         {
             // ??????? I DONT KNOW WHY THE FUCK Path.Combine() fucks this up so hard but this works great! i think it has to do with my logic above
+            // i BELIEVE its because path is blah\blah\blah and the root is \inerg\ergner\gin so the path is missing the \ making it just a string and not a path
             return fileSystemRoot + path;
         }
     }
 
     /// <summary>
-    /// Takes an absoulute path and returns a path releative to the root of the project.
+    /// Takes an absolute path and returns a path relative to the root of the project.
     /// used for the paths in config.toml
     /// </summary>
     public static string MakePathRelative(string path)
@@ -206,13 +224,13 @@ static class BlinkFS
     }
 
     /// <summary>
-    /// Trys to remove the exe ending from the path and if it cannot then it returns the original path
+    /// Tries to remove the exe ending from the path and if it cannot then it returns the original path
     /// </summary>
     public static string TryRemoveExeEnding(string path)
     {
         if (path.EndsWith(".exe"))
         {
-            return path.Replace(".exe", "");
+            return path.Replace(".exe", string.Empty);
         }
 
         return path;
@@ -226,33 +244,83 @@ static class BlinkFS
     {
         if (root != currentDir)
         {
-            Console.WriteLine(Directory.GetDirectories(currentDir));
-            foreach (string entry in Directory.GetDirectories(currentDir))
-            {
-                if (entry.Contains(".blink"))
-                {
-                    root = currentDir;
-                    Tomlyn.Model.TomlTable config = TOMLHandler.GetConfigTOML();
-                    config[Config.FileSystemRoot] = currentDir;
-                    TOMLHandler.PutTOML(config, TOMLHandler.configTomlPath);
-                    return root;
-                }
-            }
+            IsValidBlinkEnvironment();
+            root = currentDir;
+            Tomlyn.Model.TomlTable config = TOMLHandler.GetConfigTOML();
+            config[Config.FileSystemRoot] = root;
+            TOMLHandler.PutTOML(config, Config.ConfigTomlPath);
+            return root;
+
         }
         return root;
     }
 
+
+    /// <summary>
+    /// preps the instance of the program for running, required to be called when starting the program. Every terminal command calls this first.
+    /// </summary>
     public static void LoadFileSystemRoot()
     {
         string currentDir = Directory.GetCurrentDirectory();
         fileSystemRoot = currentDir;
+
+        IsValidBlinkEnvironment();
+        IsBlinkFileStructureValid();
 
         string root = (string)TOMLHandler.GetVarFromConfigTOML(Config.FileSystemRoot);
 
         root = DidFileSystemRootChange(root, currentDir);
         fileSystemRoot = root;
 
-        Config.UpdatePathSeperator();
+        Config.UpdatePathSeparator();
     }
 
+
+    /// <summary>
+    /// if the current directory is not valid it will throw a custom exception otherwise it will just do nothing
+    /// </summary>
+    /// <exception cref="InvalidBlinkEnvironment"></exception>
+    static void IsValidBlinkEnvironment()
+    {
+        foreach (string entry in Directory.GetDirectories(fileSystemRoot))
+        {
+            if (entry.Contains(".blink"))
+            {
+                return;
+            }
+            Console.WriteLine(entry);
+        }
+
+        Console.WriteLine($"The Directory {Directory.GetCurrentDirectory()}, does not contain a valid .blink folder. Please blink init or restore the .blink folder");
+        Environment.Exit(1);
+    }
+
+    /// <summary>
+    /// makes sure that the config.toml, build.toml, and bin folder exist, otherwise exits program and suggests fixes
+    /// </summary>
+    public static void IsBlinkFileStructureValid()
+    {
+        bool configExists = File.Exists(MakePathAbsolute(Config.ConfigTomlPath));
+        bool buildExists = File.Exists(MakePathAbsolute(Config.BuildTomlPath));
+        bool binExists = Directory.Exists(MakePathAbsolute(Config.BinFolderPath));
+
+
+        if (configExists && buildExists && binExists)
+            return;
+
+        if (!configExists)
+            Console.WriteLine($"The Config TOML does not exist in the .blink folder for blink to work you need to restore it or run blink verify --fix for a pre configured TOML");
+        if (!buildExists)
+            Console.WriteLine($"The Build TOML does not exist in the .blink folder for blink to work properly you need to restore it or run blink verify --fix for a new build TOML");
+        if (!binExists)
+            Console.WriteLine($"the .blink folder does not contain a bin folder this is essential for language support so please revert it or run blink verify --fix to fix");
+
+        Environment.Exit(1);
+    }
+
+
+    public static void FixFileStructure()
+    {
+        return;
+    }
 }

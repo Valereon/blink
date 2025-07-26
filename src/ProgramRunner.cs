@@ -1,6 +1,9 @@
 using System.ComponentModel;
 using System.Diagnostics;
 
+/// <summary>
+/// This class handles running processes as well as preparing and cleaning arguments
+/// </summary>
 public static class ProgramRunner
 {
     public static void SetupEnv()
@@ -9,36 +12,40 @@ public static class ProgramRunner
         LanguageSupport.EnableEnvVarsForIncludedLangs();
     }
     /// <summary>
-    /// makes arguments absoulute paths for sake of robustness can either take a string of args or an array of args
+    /// makes arguments absolute paths for sake of robustness takes a string of args split by spaces
     /// </summary>
     public static string[] PrepareArguments(string arguments)
     {
         if (arguments == null)
-            return null;
+            return Array.Empty<string>();
 
         string[] splitArgs = arguments.Split(" ");
 
-        return MakeArgsAbsoulute(splitArgs);
+        return MakeArgsAbsolute(splitArgs);
     }
-
+    /// <summary>
+    /// makes arguments absolute paths for sake of robustness takes an array of args
+    /// </summary>
     public static string[] PrepareArguments(string[] arguments)
     {
         if (arguments == null)
-            return null;
+            return Array.Empty<string>();
 
 
-        return MakeArgsAbsoulute(arguments);
+        return MakeArgsAbsolute(arguments);
     }
 
-
-    static string[] MakeArgsAbsoulute(string[] arguments)
+    /// <summary>
+    /// contains repetitive logic from PrepareArguments() and makes args absolute while ignoring flags
+    /// </summary>
+    static string[] MakeArgsAbsolute(string[] arguments)
     {
         for (int i = 0; i < arguments.Length; i++)
         {
             //no file extension so skip. its an argument
             if (!arguments[i].Contains("."))
                 continue;
-            arguments[i] = BlinkFS.MakePathAbsoulute(arguments[i]);
+            arguments[i] = BlinkFS.MakePathAbsolute(arguments[i]);
         }
         return arguments;
     }
@@ -81,7 +88,7 @@ public static class ProgramRunner
                 return true;
 
             }
-            catch (System.IO.FileNotFoundException e)
+            catch (System.IO.FileNotFoundException)
             {
                 Console.WriteLine($"{program} Is not in the build.toml or on the path!");
                 return false;
@@ -96,7 +103,7 @@ public static class ProgramRunner
     public static void StartProgram(string name, string[] args)
     {
 
-        string combinedArgs = "";
+        string combinedArgs = string.Empty;
         if (args != null)
         {
             for (int i = 0; i < args.Length; i++)
@@ -108,7 +115,7 @@ public static class ProgramRunner
         // if a program has .\ or ./ it will run the version specified instead of the path version
         if (name.Contains("." + Config.PathSeperator))
         {
-            name = BlinkFS.MakePathAbsoulute(name);
+            name = BlinkFS.MakePathAbsolute(name);
         }
         else if (BlinkFS.IsProgramInPath(name))
         {

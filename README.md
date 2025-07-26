@@ -98,11 +98,14 @@ but because of how this standalone pip version works i cannot change where the p
 
  
 - python\
-    - lib\
-        - sitePackages\
-            - packages
-    - scripts\
-        - scripts
+    - bin\
+        - lib\
+            - sitePackages\
+                - packages
+        - scripts\
+            - scripts
+    - cache\
+        - empty
 <br>
 <br>
 

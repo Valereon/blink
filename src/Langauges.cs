@@ -89,7 +89,7 @@ public static class LanguageSupport
 
         }
 
-        return [""];
+        return Array.Empty<string>();
     }
 
     public static Language IsPackageManager(string command)

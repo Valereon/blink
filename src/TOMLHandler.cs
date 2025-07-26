@@ -1,10 +1,10 @@
 using Tomlyn;
 
+/// <summary>
+/// handles almost everything related to Build.toml and Config.toml
+/// </summary>
 static class TOMLHandler
 {
-    public static string configTomlPath = @".\.blink\config.toml";
-    public static string buildTomlPath = @".\.blink\build.toml";
-
     public static void GetPathFromTOML()
     {
         Tomlyn.Model.TomlArray path = (Tomlyn.Model.TomlArray)GetVarFromConfigTOML(Config.PathKey);
@@ -15,7 +15,7 @@ static class TOMLHandler
     {
         Tomlyn.Model.TomlTable toml = GetConfigTOML();
         toml[Config.PathKey] = BlinkFS.path;
-        PutTOML(toml, configTomlPath);
+        PutTOML(toml, Config.ConfigTomlPath);
     }
     /// <summary>
     /// Returns an object and you cast the type onto it based on what it is in the TOML
@@ -76,12 +76,12 @@ static class TOMLHandler
 
     public static Tomlyn.Model.TomlTable GetConfigTOML()
     {
-        return GetTOML(configTomlPath);
+        return GetTOML(Config.ConfigTomlPath);
     }
 
     public static Tomlyn.Model.TomlTable GetBuildTOML()
     {
-        return GetTOML(buildTomlPath);
+        return GetTOML(Config.BuildTomlPath);
     }
 
     /// <summary>
@@ -101,7 +101,23 @@ static class TOMLHandler
 
     public static List<string> TOMLArrayToList(Tomlyn.Model.TomlArray array)
     {
-        return array.Select(x => x.ToString()).ToList();
+        List<string> fixedTOMLArray = new();
+        for (int i = 0; i < array.Count; i++)
+        {
+            string? element = (string?)array[i];
+            if (element != null)
+            {
+                fixedTOMLArray.Add(element);
+            }
+            else
+            {
+                Console.WriteLine($"Array {array} has a null value at element {i}");
+                Environment.Exit(1);
+            }
+
+
+        }
+        return fixedTOMLArray;
     }
 
 }
