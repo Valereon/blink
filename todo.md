@@ -25,3 +25,8 @@ aka when you try and run a blink command if there is no .blink file its not a va
 
 
 - improve ux in the command line and understanding of the tool
+
+- finish the verify command and --fix command
+
+
+- fix the binaries downloading when folder exists it exits the program, even if the bin folder is empty under lang

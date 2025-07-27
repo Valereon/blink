@@ -113,7 +113,7 @@ public static class ProgramRunner
         }
 
         // if a program has .\ or ./ it will run the version specified instead of the path version
-        if (name.Contains("." + Config.PathSeperator))
+        if (name.Contains("." + Config.PathSeparator))
         {
             name = BlinkFS.MakePathAbsolute(name);
         }

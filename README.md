@@ -3,6 +3,8 @@
 Blink is my attempt to solve "it works on my machine." I know many languages have their own version of a dev environment like pythons .venv but those require setup and are not universal. My goal was to make a universal format and command line tool to eliminate complex setup processes. Everything you will need to work on a blink project is inside of the .blink included with it.
 
 
+standalone enviroment 
+
 
 ### How it works
 blink works by packaging all packages, binares and runtimes required by the source project into a neat little .blink folder. It also adds the runtimes to the blink path. So when you send someone your zip of your project they unzip it and have the entire environment with the EXACT same things you had because everything is saved in that .blink folder. When you execute <code>blink run python --args .\src\main.py</code> blink has its own path independent of your system so it looks at this command and says "hey do i have python on blinkPath" and if it does it replaces "python" with <code>"C:\project\\.blink\bin\python\bin\python.exe"</code> and so it runs <code>C:\project\\.blink\bin\python\bin\python.exe C:\project\src\main.py</code> this is the magic of blink. It will use the .blinks python.exe and the python packages so that your systems packages and state DO NOT matter and it will just run!

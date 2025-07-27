@@ -1,8 +1,9 @@
+using System.CommandLine;
 using System.IO.Compression;
 using System.Text.RegularExpressions;
 
 /// <summary>
-/// Manages things releated to the .blink folder and the projects structure and integrity 
+/// Manages things related to the .blink folder and the projects structure and integrity 
 /// </summary>
 static class BlinkFS
 {
@@ -130,7 +131,7 @@ static class BlinkFS
     {
         foreach (string file in path)
         {
-            string[] split = file.Split(Config.PathSeperator);
+            string[] split = file.Split(Config.PathSeparator);
 
             program = TryRemoveExeEnding(program);
 
@@ -149,7 +150,7 @@ static class BlinkFS
     {
         foreach (string file in path)
         {
-            string[] split = file.Split(Config.PathSeperator);
+            string[] split = file.Split(Config.PathSeparator);
 
             program = TryRemoveExeEnding(program);
 
@@ -171,7 +172,7 @@ static class BlinkFS
 
 
     /// <summary>
-    /// This will take any path including relative paths. Clean them and turn them absoulute including ".\" "\" or "python.exe"
+    /// This will take any path including relative paths. Clean them and turn them absolute including ".\" "\" or "python.exe"
     /// </summary>
     public static string MakePathAbsolute(string path)
     {
@@ -179,11 +180,11 @@ static class BlinkFS
             return string.Empty;
 
         //crude path check
-        if (path.Contains(Config.PathSeperator))
+        if (path.Contains(Config.PathSeparator))
         {
-            if (path.Contains($@".{Config.PathSeperator}"))
+            if (path.Contains($@".{Config.PathSeparator}"))
             {
-                path = Regex.Replace(path, @"\.[/\\]", Config.PathSeperator);
+                path = Regex.Replace(path, @"\.[/\\]", Config.PathSeparator);
             }
         }
         else
@@ -201,8 +202,8 @@ static class BlinkFS
         }
         else
         {
-            // ??????? I DONT KNOW WHY THE FUCK Path.Combine() fucks this up so hard but this works great! i think it has to do with my logic above
-            // i BELIEVE its because path is blah\blah\blah and the root is \inerg\ergner\gin so the path is missing the \ making it just a string and not a path
+            // ??????? I DON'T KNOW WHY THE FUCK Path.Combine() fucks this up so hard but this works great! i think it has to do with my logic above
+            // i BELIEVE its because path is blah\blah\blah and the root is \username\docs\blink so the path is missing the \ making it just a string and not a path
             return fileSystemRoot + path;
         }
     }
@@ -215,11 +216,11 @@ static class BlinkFS
     {
         if (path.Contains(fileSystemRoot))
         {
-            return path.Replace(fileSystemRoot, @$".{Config.PathSeperator}");
+            return path.Replace(fileSystemRoot, @$".{Config.PathSeparator}");
         }
         else
         {
-            return $@".{Config.PathSeperator}{path}";
+            return $@".{Config.PathSeparator}{path}";
         }
     }
 
@@ -245,14 +246,19 @@ static class BlinkFS
         if (root != currentDir)
         {
             IsValidBlinkEnvironment();
-            root = currentDir;
-            Tomlyn.Model.TomlTable config = TOMLHandler.GetConfigTOML();
-            config[Config.FileSystemRoot] = root;
-            TOMLHandler.PutTOML(config, Config.ConfigTomlPath);
+            MakeDirFileSystemRoot(currentDir);
+
             return root;
 
         }
         return root;
+    }
+
+    public static void MakeDirFileSystemRoot(string newRoot)
+    {
+        Tomlyn.Model.TomlTable config = TOMLHandler.GetConfigTOML();
+        config[Config.FileSystemRoot] = newRoot;
+        TOMLHandler.PutTOML(config, Config.ConfigTomlPath);
     }
 
 
@@ -318,6 +324,25 @@ static class BlinkFS
         Environment.Exit(1);
     }
 
+    public static string InitLanguageFolder(LanguageSupport.Language lang, string version)
+    {
+        string versionFolderPath = $".{Config.PathSeparator}.blink{Config.PathSeparator}bin{Config.PathSeparator}{lang}-{version}";
+
+        if (Directory.Exists(MakePathAbsolute(versionFolderPath)))
+        {
+            Console.WriteLine($"{lang} with version {version} is already installed in the blink environment if the binaries are not installed please delete the {lang}-{version} folder in .blink\\bin");
+            Environment.Exit(1);
+        }
+
+        string absoluteFolderPath = MakePathAbsolute(versionFolderPath);
+
+        //TODO: add error handlign here
+        Directory.CreateDirectory(absoluteFolderPath);
+        Directory.CreateDirectory(absoluteFolderPath + @"\bin");
+        Directory.CreateDirectory(absoluteFolderPath + @"\cache");
+
+        return absoluteFolderPath;
+    }
 
     public static void FixFileStructure()
     {

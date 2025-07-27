@@ -14,24 +14,20 @@ class BlinkCLI
     {
         public void Run(CliContext context)
         {
-
+            
             string currentPath = Directory.GetCurrentDirectory();
-            Tomlyn.Model.TomlTable root = TOMLHandler.GetConfigTOML();
-            root[Config.FileSystemRoot] = currentPath;
-            TOMLHandler.PutTOML(root, Config.ConfigTomlPath);
-
-
+            BlinkFS.MakeDirFileSystemRoot(currentPath);
             BlinkFS.fileSystemRoot = currentPath;
 
-            Directory.CreateDirectory(currentPath + @"\.blink");
-            Directory.CreateDirectory(currentPath + @"\.blink\bin");
-            BlinkFS.WriteFile(currentPath + @"\.blink\config.toml", string.Empty); //TODO: have a base toml file to write to these things
-            BlinkFS.WriteFile(currentPath + @"\.blink\build.toml", string.Empty);
+            Directory.CreateDirectory(BlinkFS.MakePathAbsolute(@".\.blink"));
+            Directory.CreateDirectory(BlinkFS.MakePathAbsolute(@".\.blink\bin"));
+            BlinkFS.WriteFile(BlinkFS.MakePathAbsolute(@".\.blink\config.toml"), string.Empty); //TODO: have a base toml file to write to these things
+            BlinkFS.WriteFile(BlinkFS.MakePathAbsolute(@".\.blink\build.toml"), string.Empty);
         }
 
     }
 
-    [CliCommand(Description = "Runs a command inside the blink environment", Name = "Run")]
+    [CliCommand(Description = "Runs a command inside the blink environment", Name = "run")]
     // you cannot have them both be run so in the cli it shows up as run but i have to name it something different
     public class Runner
     {
@@ -84,7 +80,7 @@ class BlinkCLI
         }
     }
 
-    [CliCommand(Name ="Verify")]
+    [CliCommand(Name ="verify")]
     public class Verify
     {
         [CliOption(Name = "Fix", Required = false, Description ="Automatically fixed structure issues in a blink project")]
@@ -95,6 +91,25 @@ class BlinkCLI
             BlinkFS.IsBlinkFileStructureValid();
         }
     }
+
+
+    [CliCommand(Name = "langAdd")]
+    public class Add
+    {
+        [CliArgument(Name = "language", Description = "the name of the language you want to install")]
+        public string Language { get; set; } = string.Empty;
+
+        [CliArgument(Name = "version", Description ="you put the version number as denoted by the target language ex 3.1 or 24.12.3")]
+        public string Version { get; set; } = string.Empty;
+
+        public void Run()
+        {
+            BlinkFS.LoadFileSystemRoot();
+            LanguageSupport.Language lang = LanguageSupport.StringToEnumLang(Language);
+            LanguageInstaller.InstallLanguage(lang, Version);
+        }
+    }
+
 
 
     public class Export

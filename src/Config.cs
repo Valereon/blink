@@ -10,7 +10,7 @@ public static class Config
     public const string LangsInProject = "langsInProject";
     public const string FileSystemRoot = "fileSystemRoot";
 
-    public static string PathSeperator = @"\";
+    public static string PathSeparator = @"\";
 
     // blink env stuff
     public const string BinFolderPath = @".\.blink\bin";
@@ -28,6 +28,6 @@ public static class Config
     /// </summary>
     public static void UpdatePathSeparator()
     {
-        PathSeperator = Path.DirectorySeparatorChar.ToString();
+        PathSeparator = Path.DirectorySeparatorChar.ToString();
     }
 }

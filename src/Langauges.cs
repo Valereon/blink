@@ -12,6 +12,7 @@ public static class LanguageSupport
     public enum Language
     {
         Python,
+        NodeJS,
         Rust,
         C,
         Cpp,
@@ -24,6 +25,8 @@ public static class LanguageSupport
         {
             case "python":
                 return Language.Python;
+            case "nodejs":
+                return Language.NodeJS;
             case "rust":
                 return Language.Rust;
             case "c":
