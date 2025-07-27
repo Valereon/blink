@@ -52,6 +52,10 @@ class BlinkCLI
             {
                 ProgramRunner.StartProgram(Name, Args);
             }
+            else if (Name.Contains(@$".{Config.PathSeparator}"))
+            {
+                ProgramRunner.StartProgram(BlinkFS.MakePathAbsolute(Name), Args);
+            }
             else
             {
                 ProgramRunner.TOMLArbitraryRun(Name, Args);

@@ -1,7 +1,5 @@
+using System.IO.Compression;
 using System.Net;
-using System.Runtime.CompilerServices;
-using Tomlyn.Syntax;
-
 
 public static class LanguageInstaller
 {
@@ -48,6 +46,10 @@ public static class LanguageInstaller
         string fileName = folderPath + @$"\bin\NodeJS-{version}.zip";
         Console.WriteLine(fileName);
         DownloadFile($"https://nodejs.org/dist/v{version}/node-v{version}-win-x64.zip", fileName);
+        ZipFile.ExtractToDirectory(fileName, @$"{folderPath}\bin\");
+        File.Delete(fileName);
+        BlinkFS.AddProgramToPath(folderPath + @$"\bin\node-v{version}-win-x64\node.exe");
+        TOMLHandler.PutPathToTOML();
     }
 
 
