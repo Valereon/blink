@@ -2,7 +2,6 @@
 
 
 
-
 Blink is my attempt to solve "it works on my machine." The goal of blink is to have a one step proccess for installing a development enviroment, the one step? unzip it! Once unzipped you will have all, binaries, libraries, runtimes, path configurations, and custom commands of the person who configured the enviroment It's completely standalone! I am aware some langauges have virtual enviorments like python, or things like Nix and Docker. My solution differs in that the ENTIRE enviroment can be shared and opened with zero setup and offline friendly! no more dependency hell or path variables configuration! everything just works!
 
 # Pros and Cons
@@ -11,6 +10,7 @@ Now there are some tradeoffs with this apporach of course. I want to mention the
 - Large inital file size
 - Hosting issues, harder to share
 - Some learning curve and some quirks
+- it does flood your git changes when you want to commit so excluding .blink and uploading it sepereatly may be better for large projects. When you want to share you can zip it and send it
 
 ## Pros
 - One step setup
