@@ -30,3 +30,11 @@ aka when you try and run a blink command if there is no .blink file its not a va
 
 
 - fix the binaries downloading when folder exists it exits the program, even if the bin folder is empty under lang
+
+
+- people should maybe exlucde build.toml from their pushes or maybe theres a customBuilt.toml whjere that doesnt get pushed but the main build.toml gets updated with helpful things acorss people but the customBuild.toml can let people keep their own commands 
+
+
+- MAYBE IN THE FUTURE ADD A TRADEOFF
+ - so if teams host on github or whatever you should be able to produce a diff file for packages and binaries so say like idk maybe not binaries cause thats harder to figure out but say like i update numpy to 3.0 and yours is 2.9 and we sync enviroments there should be a way to blink export --packages then it will export a full list of packages and version numbers and then when you get that file you run blink update --packages and thenit will update packages accordingly but binaries is too hard they probably would just do a full project sync
+
