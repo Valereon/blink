@@ -248,8 +248,7 @@ static class BlinkFS
             IsValidBlinkEnvironment();
             MakeDirFileSystemRoot(currentDir);
 
-            return root;
-
+            return currentDir;
         }
         return root;
     }
@@ -265,7 +264,7 @@ static class BlinkFS
     /// <summary>
     /// preps the instance of the program for running, required to be called when starting the program. Every terminal command calls this first.
     /// </summary>
-    public static void LoadFileSystemRoot()
+    public static void LoadFileSystem()
     {
         string currentDir = Directory.GetCurrentDirectory();
         fileSystemRoot = currentDir;

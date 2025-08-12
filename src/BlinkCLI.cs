@@ -2,6 +2,7 @@
 using DotMake.CommandLine;
 
 
+BlinkFS.LoadFileSystem();
 Cli.Run<BlinkCLI>(args);
 /// <summary>
 /// The Class that contains all command line commands using dot makeCLI
@@ -9,16 +10,14 @@ Cli.Run<BlinkCLI>(args);
 [CliCommand(Description = "The Blink CLI")]
 class BlinkCLI
 {
+
+
+
     [CliCommand(Description = "Inits a blink project in the current directory")]
     public class Init
     {
-        public void Run(CliContext context)
+        public void Run()
         {
-            
-            string currentPath = Directory.GetCurrentDirectory();
-            BlinkFS.MakeDirFileSystemRoot(currentPath);
-            BlinkFS.fileSystemRoot = currentPath;
-
             Directory.CreateDirectory(BlinkFS.MakePathAbsolute(@".\.blink"));
             Directory.CreateDirectory(BlinkFS.MakePathAbsolute(@".\.blink\bin"));
             BlinkFS.WriteFile(BlinkFS.MakePathAbsolute(@".\.blink\config.toml"), string.Empty); //TODO: have a base toml file to write to these things
@@ -35,19 +34,33 @@ class BlinkCLI
         public string Name { get; set; } = string.Empty;
         [CliOption(Description = "The args you want to run the program with", Required = false, AllowMultipleArgumentsPerToken = true)]
         public string[] Args { get; set; } = Array.Empty<string>();
+
+
+        [CliOption(Description = "Lists all of the commands inside of Build.toml", Required = false, Name = "List")]
+        public bool list { get; set; }
+
+
+
         public void Run()
         {
-            BlinkFS.LoadFileSystemRoot();
+            if (list)
+            {
+                List<string> commands = TOMLHandler.GetAllCommandsInBuildTOML();
+                foreach (string command in commands)
+                {
+                    Console.WriteLine(command);
+                }
+                return;
+            }
+
+
             ProgramRunner.SetupEnv();
 
 
-            Args = ProgramRunner.PrepareArguments(Args);
-            Args = LanguageSupport.GetPackageManagerArgs(Name, Args);
 
-            foreach (string item in Args)
-            {
-                Console.WriteLine(item);
-            }
+            Args = ProgramRunner.PrepareArguments(Args);
+            // Args = LanguageSupport.GetPackageManagerArgs(Name, Args);
+
             if (BlinkFS.IsProgramInPath(Name))
             {
                 ProgramRunner.StartProgram(Name, Args);
@@ -72,7 +85,7 @@ class BlinkCLI
 
         public void Run()
         {
-            BlinkFS.LoadFileSystemRoot();
+
 
             TOMLHandler.GetPathFromTOML();
             if (Path == null)
@@ -84,14 +97,13 @@ class BlinkCLI
         }
     }
 
-    [CliCommand(Name ="verify")]
+    [CliCommand(Name = "verify")]
     public class Verify
     {
-        [CliOption(Name = "Fix", Required = false, Description ="Automatically fixed structure issues in a blink project")]
+        [CliOption(Name = "Fix", Required = false, Description = "Automatically fixed structure issues in a blink project")]
         public bool Fix { get; set; } = false;
         public void Run()
         {
-            BlinkFS.LoadFileSystemRoot();
             BlinkFS.IsBlinkFileStructureValid();
         }
     }
@@ -103,12 +115,11 @@ class BlinkCLI
         [CliArgument(Name = "language", Description = "the name of the language you want to install")]
         public string Language { get; set; } = string.Empty;
 
-        [CliArgument(Name = "version", Description ="you put the version number as denoted by the target language ex 3.1 or 24.12.3")]
+        [CliArgument(Name = "version", Description = "you put the version number as denoted by the target language ex 3.1 or 24.12.3")]
         public string Version { get; set; } = string.Empty;
 
         public void Run()
         {
-            BlinkFS.LoadFileSystemRoot();
             LanguageSupport.Language lang = LanguageSupport.StringToEnumLang(Language);
             LanguageInstaller.InstallLanguage(lang, Version);
         }
@@ -127,7 +138,7 @@ class BlinkCLI
 
 
 
-    
+
 
 }
 

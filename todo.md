@@ -31,8 +31,8 @@ aka when you try and run a blink command if there is no .blink file its not a va
 
 - fix the binaries downloading when folder exists it exits the program, even if the bin folder is empty under lang
 
+- add a list command, command for the build.toml
 
-- people should maybe exlucde build.toml from their pushes or maybe theres a customBuilt.toml whjere that doesnt get pushed but the main build.toml gets updated with helpful things acorss people but the customBuild.toml can let people keep their own commands 
 
 
 - MAYBE IN THE FUTURE ADD A TRADEOFF

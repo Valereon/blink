@@ -7,10 +7,10 @@ Blink is my attempt to solve "it works on my machine." The goal of blink is to h
 # Pros and Cons
 ## Cons
 Now there are some tradeoffs with this apporach of course. I want to mention the cons before the pros so you know them without being too excited.
-- Large inital file size
-- Hosting issues, harder to share
-- Some learning curve and some quirks
-- it does flood your git changes when you want to commit so excluding .blink and uploading it sepereatly may be better for large projects. When you want to share you can zip it and send it
+- Large inital file size.
+- Hosting issues, harder to share.
+- Some learning curve and some quirks.
+- [Kind of?] may require hosting the .blink folder separately if you dont want your git changes flooded with package file changes, or want to separate code changes and blink changes.
 
 ## Pros
 - One step setup
@@ -68,11 +68,13 @@ I have learned through numerous trial and error that it is not worth fighting pa
 
 
 ## Defining your own commands
-In build.toml you can define your own commands as easily as adding a new entry 
+In build.toml you can define your own commands as easily as adding a new entry.
+<br>
+you CAN use things on the path inside of the build.toml and also you DONT NEED TO use -a/--args for this just write the command normally
 <br>
 ```toml
     build = "dotnet build .."
-    run = "dotnet run ..\src\\"
+    run = "dotnet run ..\\src\\"
     foo = "ls -l"
 ```
 all you do is run `blink run build` or `blink run foo` you can name these commands anything you want.

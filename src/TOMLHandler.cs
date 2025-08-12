@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Tomlyn;
 
 /// <summary>
@@ -29,27 +30,25 @@ static class TOMLHandler
     /// <summary>
     /// Returns an object and you cast the type onto it based on what it is in the TOML
     /// </summary>
-    public static object GetVarFromTOML(Tomlyn.Model.TomlTable tomlTable, string var)
+    public static object GetVarFromTOML(Tomlyn.Model.TomlTable tomlTable, string var, bool bubbleUp = false)
     {
         try
         {
             return tomlTable[var];
         }
-        catch (KeyNotFoundException)
+        catch (KeyNotFoundException) when (bubbleUp == false)
         {
-            Console.WriteLine($"Key {var} not found in TOML {tomlTable}");
+            Console.WriteLine($"Error: Key '{var}' does not exits in the TOML. (program doesn't know which toml based on this call)");
             Environment.Exit(1);
             return null;
         }
-
-
     }
 
     public static object GetVarFromConfigTOML(string var)
     {
         try
         {
-            return GetVarFromTOML(GetConfigTOML(), var);
+            return GetVarFromTOML(GetConfigTOML(), var, true);
         }
         catch (KeyNotFoundException)
         {
@@ -63,7 +62,7 @@ static class TOMLHandler
     {
         try
         {
-            return GetVarFromTOML(GetBuildTOML(), var);
+            return GetVarFromTOML(GetBuildTOML(), var, true);
         }
         catch (KeyNotFoundException)
         {
@@ -118,6 +117,29 @@ static class TOMLHandler
 
         }
         return fixedTOMLArray;
+    }
+
+    public static List<string> GetAllCommandsInBuildTOML()
+    {
+        Tomlyn.Model.TomlTable buildTOML = GetBuildTOML();
+        List<string> commands = new();
+        
+        foreach (object command in buildTOML.Keys)
+        {
+            string castedString;
+            try
+            {
+                castedString = (string)command;
+            }
+            catch (InvalidCastException)
+            {
+                continue;
+            }
+
+            commands.Add(castedString);
+        }
+
+        return commands;
     }
 
 }
