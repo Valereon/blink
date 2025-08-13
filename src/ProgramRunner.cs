@@ -9,7 +9,6 @@ public static class ProgramRunner
     public static void SetupEnv()
     {
         TOMLHandler.GetPathFromTOML();
-        LanguageSupport.EnableEnvVarsForIncludedLangs();
     }
     /// <summary>
     /// makes arguments absolute paths for sake of robustness takes a string of args split by spaces
@@ -53,7 +52,7 @@ public static class ProgramRunner
     /// <summary>
     /// runs the pre-specified command in build.toml returns true if command is run and false if it couldnt find one
     /// </summary>
-    public static bool TOMLArbitraryRun(string command, string[] args)
+    public static void TOMLArbitraryRun(string command, string[] args)
     {
         string commandToRun = (string)TOMLHandler.GetVarFromBuildTOML(command);
         string[] split = commandToRun.Split(" ");
@@ -78,21 +77,14 @@ public static class ProgramRunner
         {
             string programOnPath = BlinkFS.GetProgramOnPathsFilePath(program);
             StartProgram(programOnPath, combinedArgs);
-            return true;
         }
         else
         {
-            try
-            {
-                StartProgram(program, combinedArgs);
-                return true;
+            if (!File.Exists(program))
+                throw new BlinkFSException($"File: '{program}' Does not exist, or is not in build.toml OR the path");
+            
+            StartProgram(program, combinedArgs);
 
-            }
-            catch (FileNotFoundException)
-            {
-                Console.WriteLine($"{program} Is not in the build.toml or on the path!");
-                return false;
-            }
         }
     }
 
@@ -155,7 +147,7 @@ public static class ProgramRunner
 
         var inputTask = Task.Run(() =>
         {
-            while (!proc.HasExited)
+            while (!proc.HasExited && Console.KeyAvailable)
             {
                 try
                 {
