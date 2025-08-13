@@ -18,10 +18,18 @@ class BlinkCLI
     {
         public void Run()
         {
-            Directory.CreateDirectory(BlinkFS.MakePathAbsolute(@".\.blink"));
-            Directory.CreateDirectory(BlinkFS.MakePathAbsolute(@".\.blink\bin"));
-            BlinkFS.WriteFile(BlinkFS.MakePathAbsolute(@".\.blink\config.toml"), string.Empty); //TODO: have a base toml file to write to these things
-            BlinkFS.WriteFile(BlinkFS.MakePathAbsolute(@".\.blink\build.toml"), string.Empty);
+            try
+            {
+                BlinkFS.CreateDirectory(BlinkFS.MakePathAbsolute(@".\.blink"));
+                BlinkFS.CreateDirectory(BlinkFS.MakePathAbsolute(@".\.blink\bin"));
+                BlinkFS.WriteFile(BlinkFS.MakePathAbsolute(@".\.blink\config.toml"), string.Empty); //TODO: have a base toml file to write to these things
+                BlinkFS.WriteFile(BlinkFS.MakePathAbsolute(@".\.blink\build.toml"), string.Empty);
+            }
+            catch (BlinkFSException ex)
+            {
+                Console.WriteLine(ex.Message);
+                Environment.Exit(1);
+            }
         }
 
     }
@@ -43,36 +51,46 @@ class BlinkCLI
 
         public void Run()
         {
-            if (list)
+            try
             {
-                List<string> commands = TOMLHandler.GetAllCommandsInBuildTOML();
-                foreach (string command in commands)
+                if (list)
                 {
-                    Console.WriteLine(command);
+                    List<string> commands = TOMLHandler.GetAllCommandsInBuildTOML();
+                    foreach (string command in commands)
+                    {
+                        Console.WriteLine(command);
+                    }
+                    return;
                 }
-                return;
+
+
+                ProgramRunner.SetupEnv();
+
+
+
+                Args = ProgramRunner.PrepareArguments(Args);
+                // Args = LanguageSupport.GetPackageManagerArgs(Name, Args);
+
+                if (BlinkFS.IsProgramInPath(Name))
+                {
+                    ProgramRunner.StartProgram(Name, Args);
+                }
+                else if (Name.Contains(@$".{Config.PathSeparator}"))
+                {
+                    ProgramRunner.StartProgram(BlinkFS.MakePathAbsolute(Name), Args);
+                }
+                else
+                {
+                    ProgramRunner.TOMLArbitraryRun(Name, Args);
+                }
+
             }
-
-
-            ProgramRunner.SetupEnv();
-
-
-
-            Args = ProgramRunner.PrepareArguments(Args);
-            // Args = LanguageSupport.GetPackageManagerArgs(Name, Args);
-
-            if (BlinkFS.IsProgramInPath(Name))
+            catch (BlinkException ex)
             {
-                ProgramRunner.StartProgram(Name, Args);
+                Console.WriteLine(ex.Message);
+                Environment.Exit(1);
             }
-            else if (Name.Contains(@$".{Config.PathSeparator}"))
-            {
-                ProgramRunner.StartProgram(BlinkFS.MakePathAbsolute(Name), Args);
-            }
-            else
-            {
-                ProgramRunner.TOMLArbitraryRun(Name, Args);
-            }
+
 
         }
     }
@@ -86,14 +104,22 @@ class BlinkCLI
         public void Run()
         {
 
+            try
+            {
+                TOMLHandler.GetPathFromTOML();
+                if (Path == null || Path == string.Empty)
+                    throw new BlinkException("program path cannot be null or empty");
 
-            TOMLHandler.GetPathFromTOML();
-            if (Path == null)
-                return;
 
+                BlinkFS.AddProgramToPath(BlinkFS.MakePathRelative(Path));
+                TOMLHandler.PutPathToTOML();
+            }
+            catch (BlinkException ex)
+            {
+                Console.WriteLine(ex.Message);
+                Environment.Exit(1);
+            }
 
-            BlinkFS.AddProgramToPath(BlinkFS.MakePathRelative(Path));
-            TOMLHandler.PutPathToTOML();
         }
     }
 

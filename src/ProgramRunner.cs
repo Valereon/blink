@@ -88,7 +88,7 @@ public static class ProgramRunner
                 return true;
 
             }
-            catch (System.IO.FileNotFoundException)
+            catch (FileNotFoundException)
             {
                 Console.WriteLine($"{program} Is not in the build.toml or on the path!");
                 return false;

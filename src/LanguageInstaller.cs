@@ -14,9 +14,8 @@ public static class LanguageInstaller
             }
             catch
             {
-                Console.WriteLine($"Url {url} has run into an issue, please try again with a different url");
-                Directory.Delete(pathToSave);
-                Environment.Exit(1);
+                BlinkFS.DeleteDirectory(pathToSave);
+                throw new BlinkDownloadException($"Url {url} has run into an issue, please try again with a different url");
             }
         }
     }
@@ -46,8 +45,9 @@ public static class LanguageInstaller
         string fileName = folderPath + @$"\bin\NodeJS-{version}.zip";
         Console.WriteLine(fileName);
         DownloadFile($"https://nodejs.org/dist/v{version}/node-v{version}-win-x64.zip", fileName);
+        
         ZipFile.ExtractToDirectory(fileName, @$"{folderPath}\bin\");
-        File.Delete(fileName);
+        BlinkFS.DeleteFile(fileName);
         BlinkFS.AddProgramToPath(folderPath + @$"\bin\node-v{version}-win-x64\node.exe");
         TOMLHandler.PutPathToTOML();
     }

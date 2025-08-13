@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using Tomlyn;
+using Tomlyn.Model;
 
 /// <summary>
 /// handles almost everything related to Build.toml and Config.toml
@@ -8,13 +9,13 @@ static class TOMLHandler
 {
     public static void GetPathFromTOML()
     {
-        Tomlyn.Model.TomlArray path = (Tomlyn.Model.TomlArray)GetVarFromConfigTOML(Config.PathKey);
+        TomlArray path = (TomlArray)GetVarFromConfigTOML(Config.PathKey);
         List<string> pathVars = TOMLArrayToList(path);
         BlinkFS.path = pathVars;
     }
     public static void PutPathToTOML()
     {
-        Tomlyn.Model.TomlTable toml = GetConfigTOML();
+        TomlTable toml = GetConfigTOML();
         toml[Config.PathKey] = BlinkFS.path;
         PutTOML(toml, Config.ConfigTomlPath);
     }
@@ -23,62 +24,45 @@ static class TOMLHandler
     /// </summary>
     public static object GetVarFromTOML(string tomlPath, string var)
     {
-        Tomlyn.Model.TomlTable table = GetTOML(tomlPath);
+        TomlTable table = GetTOML(tomlPath);
+
+        if (!table.ContainsKey(var))
+            throw new BlinkTOMLException($"Key {var} Does not exist in {Path.GetFileName(tomlPath)}");
+
         return table[var];
     }
 
     /// <summary>
     /// Returns an object and you cast the type onto it based on what it is in the TOML
     /// </summary>
-    public static object GetVarFromTOML(Tomlyn.Model.TomlTable tomlTable, string var, bool bubbleUp = false)
+    public static object GetVarFromTOML(TomlTable tomlTable, string var, string tomlName)
     {
-        try
-        {
-            return tomlTable[var];
-        }
-        catch (KeyNotFoundException) when (bubbleUp == false)
-        {
-            Console.WriteLine($"Error: Key '{var}' does not exits in the TOML. (program doesn't know which toml based on this call)");
-            Environment.Exit(1);
-            return null;
-        }
+        if (!tomlTable.ContainsKey(var))
+            throw new BlinkTOMLException($"Key: {var} does not exist in {tomlName}.toml");
+
+        return tomlTable[var];
     }
 
     public static object GetVarFromConfigTOML(string var)
     {
-        try
-        {
-            return GetVarFromTOML(GetConfigTOML(), var, true);
-        }
-        catch (KeyNotFoundException)
-        {
-            Console.WriteLine($"Error: Key '{var}' does not exist in the Config TOML");
-            Environment.Exit(1);
-            return null;
-        }
+        return GetVarFromTOML(GetConfigTOML(), var, "config");
     }
 
     public static object GetVarFromBuildTOML(string var)
     {
-        try
-        {
-            return GetVarFromTOML(GetBuildTOML(), var, true);
-        }
-        catch (KeyNotFoundException)
-        {
-            Console.WriteLine($"Error: Key '{var}' does not exist in the Build TOML");
-            Environment.Exit(1);
-            return null;
-        }
+
+        return GetVarFromTOML(GetBuildTOML(), var, "build");
+        
+        
     }
 
 
-    public static Tomlyn.Model.TomlTable GetConfigTOML()
+    public static TomlTable GetConfigTOML()
     {
         return GetTOML(Config.ConfigTomlPath);
     }
 
-    public static Tomlyn.Model.TomlTable GetBuildTOML()
+    public static TomlTable GetBuildTOML()
     {
         return GetTOML(Config.BuildTomlPath);
     }
@@ -86,19 +70,26 @@ static class TOMLHandler
     /// <summary>
     /// Gets the TOML using the absolute path
     /// </summary>
-    public static Tomlyn.Model.TomlTable GetTOML(string path)
+    public static TomlTable GetTOML(string path)
     {
-        return Toml.ToModel(BlinkFS.ReadFile(path));
+        try
+        {
+            return Toml.ToModel(BlinkFS.ReadFile(path));
+        }
+        catch (TomlException)
+        {
+            throw new BlinkTOMLException(@$"TOML: {path} is invalid, it most likely has an invalid character in one of its strings, probably an escape character in a path. Please always use \\ in paths");
+        }
     }
 
 
-    public static void PutTOML(Tomlyn.Model.TomlTable tomlTable, string path)
+    public static void PutTOML(TomlTable tomlTable, string path)
     {
         string textTOML = Toml.FromModel(tomlTable);
         BlinkFS.WriteFile(path, textTOML);
     }
 
-    public static List<string> TOMLArrayToList(Tomlyn.Model.TomlArray array)
+    public static List<string> TOMLArrayToList(TomlArray array)
     {
         List<string> fixedTOMLArray = new();
         for (int i = 0; i < array.Count; i++)
@@ -110,8 +101,7 @@ static class TOMLHandler
             }
             else
             {
-                Console.WriteLine($"Array {array} has a null value at element {i}");
-                Environment.Exit(1);
+                throw new BlinkTOMLException($"Array: {array} has a null value at element {i}");
             }
 
 
@@ -121,7 +111,7 @@ static class TOMLHandler
 
     public static List<string> GetAllCommandsInBuildTOML()
     {
-        Tomlyn.Model.TomlTable buildTOML = GetBuildTOML();
+        TomlTable buildTOML = GetBuildTOML();
         List<string> commands = new();
         
         foreach (object command in buildTOML.Keys)

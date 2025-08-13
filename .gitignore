@@ -1,3 +1,4 @@
 newProject/
 obj/
 bin/
+**/.vscode/

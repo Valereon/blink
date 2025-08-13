@@ -1,6 +1,7 @@
-using System.CommandLine;
+
 using System.IO.Compression;
 using System.Text.RegularExpressions;
+using Tomlyn.Model;
 
 /// <summary>
 /// Manages things related to the .blink folder and the projects structure and integrity 
@@ -11,31 +12,6 @@ static class BlinkFS
 
     public static List<string> path = new();
 
-
-    public static void ExtractFileSystem(string zipPath, string extractPath)
-    {
-        try
-        {
-            ZipFile.ExtractToDirectory(zipPath, extractPath);
-            fileSystemRoot = extractPath;
-        }
-        catch (FileNotFoundException)
-        {
-            Console.WriteLine($"File {zipPath} Does not exist");
-            Environment.Exit(1);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            Console.WriteLine($"Could not read {zipPath} Permission denied");
-            Environment.Exit(1);
-        }
-        catch (IOException e)
-        {
-            Console.WriteLine($"Error IOException {e}");
-            Environment.Exit(1);
-        }
-    }
-
     public static void ZipFileSystem(string zipToPath)
     {
         try
@@ -44,36 +20,34 @@ static class BlinkFS
         }
         catch (IOException e)
         {
-            Console.WriteLine($"Error IOException {e}");
-            Environment.Exit(1);
+            throw new BlinkFSException($"Error Zipping '{zipToPath}' : {e}");
         }
     }
 
     /// <summary>
-    /// reads a file tile the end, takes a path
+    /// reads a file till the end, takes a path
     /// </summary>
     /// <param name="filePath"></param>
     /// <returns></returns>
     public static string ReadFile(string filePath)
     {
+
+        filePath = MakePathAbsolute(filePath);
+        if (!File.Exists(filePath))
+            throw new BlinkFSException($"Could not read File, '{filePath}' Does not exist");
+
         try
         {
-            return File.ReadAllText(MakePathAbsolute(filePath));
-        }
-        catch (FileNotFoundException)
-        {
-            Console.WriteLine($"Could not read File, {filePath} Does not exist");
+            return File.ReadAllText(filePath);
         }
         catch (UnauthorizedAccessException)
         {
-            Console.WriteLine($"Could not read {filePath} Permission denied");
+            throw new BlinkFSException($"Could not read '{filePath}' Permission denied");
         }
         catch (IOException e)
         {
-            Console.WriteLine($"Error IOException {e}");
+            throw new BlinkFSException($"Error reading file '{filePath}' : {e}");
         }
-        Environment.Exit(1);
-        return null;
     }
 
 
@@ -82,50 +56,80 @@ static class BlinkFS
     /// </summary>
     public static void WriteFile(string filePath, string text)
     {
+
+
+        filePath = MakePathAbsolute(filePath);
+
         try
         {
-            File.WriteAllText(MakePathAbsolute(filePath), text);
-            return;
-        }
-        catch (FileNotFoundException)
-        {
-            Console.WriteLine($"could not write to File, {filePath} Does not exist");
-            Environment.Exit(1);
+            File.WriteAllText(filePath, text);
         }
         catch (UnauthorizedAccessException)
         {
-            Console.WriteLine($"Could not write {filePath} Permission denied");
-            Environment.Exit(1);
+            throw new BlinkFSException($"Could not write '{filePath}' Permission denied");
         }
         catch (IOException e)
         {
-            Console.WriteLine($"Error IOException {e}");
-            Environment.Exit(1);
+            throw new BlinkFSException($"Error Writing file '{filePath}' : {e}");
         }
     }
 
     public static void DeleteFile(string filePath)
     {
+        filePath = MakePathAbsolute(filePath);
+
+        if (!File.Exists(filePath))
+            throw new BlinkFSException($"Could not delete File, '{filePath}' Does not exist");
         try
         {
-            File.Delete(MakePathAbsolute(filePath));
-        }
-        catch (FileNotFoundException)
-        {
-            Console.WriteLine($"could not delete File, {filePath} Does not exist");
-            Environment.Exit(1);
+            File.Delete(filePath);
         }
         catch (UnauthorizedAccessException)
         {
-            Console.WriteLine($"Could not delete {filePath} Permission denied");
-            Environment.Exit(1);
+            throw new BlinkFSException($"Could not delete '{filePath}' Permission denied");
         }
         catch (IOException e)
         {
-            Console.WriteLine($"Error IOException {e}");
-            Environment.Exit(1);
+            throw new BlinkFSException($"Error Deleting file '{filePath}' : {e}");
         }
     }
+
+    public static void CreateDirectory(string filePath)
+    {
+        filePath = MakePathAbsolute(filePath);
+        try
+        {
+            Directory.CreateDirectory(filePath);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            throw new BlinkFSException($"Could not create directory at path '{filePath}' , Permission Denied");
+        }
+        catch (IOException e)
+        {
+            throw new BlinkFSException($"Could not create directory '{filePath}' : {e} ");
+        }
+    }
+    public static void DeleteDirectory(string filePath)
+    {
+        filePath = MakePathAbsolute(filePath);
+        if (!File.Exists(filePath))
+            throw new BlinkFSException($"Could not delete directory, '{filePath}' Does not exist");
+
+        try
+        {
+            Directory.Delete(filePath);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            throw new BlinkFSException($"Could not delete directory at path '{filePath}' , Permission Denied");
+        }
+        catch (IOException e)
+        {
+            throw new BlinkFSException($"Could not delete directory '{filePath}' : {e} ");
+        }
+    }
+
 
     public static bool IsProgramInPath(string program)
     {
@@ -167,6 +171,10 @@ static class BlinkFS
     /// <param name="program"></param>
     public static void AddProgramToPath(string program)
     {
+        if (path.Contains(program))
+        {
+            throw new BlinkFSException($"File '{program}' Already exists on the path");
+        }
         path.Add(program);
     }
 
@@ -202,9 +210,7 @@ static class BlinkFS
         }
         else
         {
-            // ??????? I DON'T KNOW WHY THE FUCK Path.Combine() fucks this up so hard but this works great! i think it has to do with my logic above
-            // i BELIEVE its because path is blah\blah\blah and the root is \username\docs\blink so the path is missing the \ making it just a string and not a path
-            return fileSystemRoot + path;
+            return Path.GetFullPath(Path.Combine(fileSystemRoot, path.TrimStart('\\', '/')));
         }
     }
 
@@ -220,6 +226,10 @@ static class BlinkFS
         }
         else
         {
+            if (path.Contains(@$".{Config.PathSeparator}"))
+            {
+                return path;
+            }
             return $@".{Config.PathSeparator}{path}";
         }
     }
@@ -227,6 +237,7 @@ static class BlinkFS
     /// <summary>
     /// Tries to remove the exe ending from the path and if it cannot then it returns the original path
     /// </summary>
+    //TODO : CHANGE THIS TO BE FILE ENDING NOT JUST EXE
     public static string TryRemoveExeEnding(string path)
     {
         if (path.EndsWith(".exe"))
@@ -240,7 +251,7 @@ static class BlinkFS
     /// <summary>
     /// Checks wether or not the file system root changed and if it did then to write that to the config.toml
     /// </summary>
-    /// <returns>string updated root if updated otherwise root</returns>
+    /// <returns>string: updated root. if updated otherwise unchanged root</returns>
     public static string DidFileSystemRootChange(string root, string currentDir)
     {
         if (root != currentDir)
@@ -255,7 +266,7 @@ static class BlinkFS
 
     public static void MakeDirFileSystemRoot(string newRoot)
     {
-        Tomlyn.Model.TomlTable config = TOMLHandler.GetConfigTOML();
+        TomlTable config = TOMLHandler.GetConfigTOML();
         config[Config.FileSystemRoot] = newRoot;
         TOMLHandler.PutTOML(config, Config.ConfigTomlPath);
     }
@@ -293,11 +304,9 @@ static class BlinkFS
             {
                 return;
             }
-            Console.WriteLine(entry);
         }
 
-        Console.WriteLine($"The Directory {Directory.GetCurrentDirectory()}, does not contain a valid .blink folder. Please blink init or restore the .blink folder");
-        Environment.Exit(1);
+        throw new BlinkFSException($"The Directory {Directory.GetCurrentDirectory()}, does not contain a valid .blink folder. Please blink init or restore the .blink folder");
     }
 
     /// <summary>
@@ -314,31 +323,30 @@ static class BlinkFS
             return;
 
         if (!configExists)
-            Console.WriteLine($"The Config TOML does not exist in the .blink folder for blink to work you need to restore it or run blink verify --fix for a pre configured TOML");
+            throw new BlinkFSException($"The Config TOML does not exist in the .blink folder for blink to work you need to restore it or run blink verify --fix for a pre configured TOML");
         if (!buildExists)
-            Console.WriteLine($"The Build TOML does not exist in the .blink folder for blink to work properly you need to restore it or run blink verify --fix for a new build TOML");
+            throw new BlinkFSException($"The Build TOML does not exist in the .blink folder for blink to work properly you need to restore it or run blink verify --fix for a new build TOML");
         if (!binExists)
-            Console.WriteLine($"the .blink folder does not contain a bin folder this is essential for language support so please revert it or run blink verify --fix to fix");
+            throw new BlinkFSException($"the .blink folder does not contain a bin folder this is essential for language support so please revert it or run blink verify --fix to fix");
 
-        Environment.Exit(1);
     }
 
     public static string InitLanguageFolder(LanguageSupport.Language lang, string version)
     {
         string versionFolderPath = $".{Config.PathSeparator}.blink{Config.PathSeparator}bin{Config.PathSeparator}{lang}-{version}";
+        versionFolderPath = MakePathAbsolute(versionFolderPath);
 
-        if (Directory.Exists(MakePathAbsolute(versionFolderPath)))
+        if (Directory.Exists(versionFolderPath) && Directory.EnumerateFiles($@"{versionFolderPath}{Config.PathSeparator}bin{Config.PathSeparator}").Count() > 0)
         {
-            Console.WriteLine($"{lang} with version {version} is already installed in the blink environment if the binaries are not installed please delete the {lang}-{version} folder in .blink\\bin");
-            Environment.Exit(1);
+            throw new BlinkFSException($"{lang} with version {version} is already installed in the blink environment if the binaries are not installed please delete the {lang}-{version} folder in .blink\\bin");
         }
 
         string absoluteFolderPath = MakePathAbsolute(versionFolderPath);
 
         //TODO: add error handlign here
-        Directory.CreateDirectory(absoluteFolderPath);
-        Directory.CreateDirectory(absoluteFolderPath + @"\bin");
-        Directory.CreateDirectory(absoluteFolderPath + @"\cache");
+        CreateDirectory(absoluteFolderPath);
+        CreateDirectory(absoluteFolderPath + @$"{Config.PathSeparator}bin");
+        CreateDirectory(absoluteFolderPath + @$"{Config.PathSeparator}cache");
 
         return absoluteFolderPath;
     }
