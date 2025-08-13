@@ -15,7 +15,7 @@ public static class LanguageInstaller
             catch
             {
                 BlinkFS.DeleteDirectory(pathToSave);
-                throw new BlinkDownloadException($"Url {url} has run into an issue, please try again with a different url");
+                throw new BlinkDownloadException($"Url '{url}' has run into an issue, please try again with a different url");
             }
         }
     }

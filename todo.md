@@ -1,8 +1,9 @@
 
 
 ## do now
-- more error handling
 - a add python and fetches the binaries from python.com and sets it up gracefully inside the proper folder and add the folders and add the binary to the path
+
+
 
 - make a verify method that goes through both TOMls and makes sure the paths are relative to the project root
 - finish the verify command and --fix command
@@ -15,10 +16,7 @@
 - improve ux in the command line and understanding of the tool
 
 ## Low Priority
-
 - add support to chaNGE SLN files and others in vs and vscode for better inclusion and intellisense
 idk if this is important people can just add to their include path in visual studio
 - add linux and mac support by including those binaries when using add if the they are added in the target platform in config.toml
-- MAYBE IN THE FUTURE ADD A TRADEOFF
- - so if teams host on github or whatever you should be able to produce a diff file for packages and binaries so say like idk maybe not binaries cause thats harder to figure out but say like i update numpy to 3.0 and yours is 2.9 and we sync enviroments there should be a way to blink export --packages then it will export a full list of packages and version numbers and then when you get that file you run blink update --packages and thenit will update packages accordingly but binaries is too hard they probably would just do a full project sync
 

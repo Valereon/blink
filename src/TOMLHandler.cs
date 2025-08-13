@@ -27,7 +27,7 @@ static class TOMLHandler
         TomlTable table = GetTOML(tomlPath);
 
         if (!table.ContainsKey(var))
-            throw new BlinkTOMLException($"Key {var} Does not exist in {Path.GetFileName(tomlPath)}");
+            throw new BlinkTOMLException($"Key '{var}' Does not exist in {Path.GetFileName(tomlPath)}");
 
         return table[var];
     }
@@ -38,7 +38,7 @@ static class TOMLHandler
     public static object GetVarFromTOML(TomlTable tomlTable, string var, string tomlName)
     {
         if (!tomlTable.ContainsKey(var))
-            throw new BlinkTOMLException($"Key: {var} does not exist in {tomlName}.toml");
+            throw new BlinkTOMLException($"Key: '{var}' does not exist in {tomlName}.toml");
 
         return tomlTable[var];
     }
@@ -78,7 +78,7 @@ static class TOMLHandler
         }
         catch (TomlException)
         {
-            throw new BlinkTOMLException(@$"TOML: {path} is invalid, it most likely has an invalid character in one of its strings, probably an escape character in a path. Please always use \\ in paths");
+            throw new BlinkTOMLException(@$"TOML: '{path}' is invalid, it most likely has an invalid character in one of its strings, probably an escape character in a path. Please always use \\ in paths");
         }
     }
 
@@ -101,7 +101,7 @@ static class TOMLHandler
             }
             else
             {
-                throw new BlinkTOMLException($"Array: {array} has a null value at element {i}");
+                throw new BlinkTOMLException($"Array: '{array}' has a null value at element {i}");
             }
 
 

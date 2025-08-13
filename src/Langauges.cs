@@ -1,9 +1,3 @@
-
-
-
-
-using System.Runtime.InteropServices;
-
 /// <summary>
 /// Adds support for various programming language specific things like enalbing the env or using the package manger
 /// </summary>
@@ -38,7 +32,7 @@ public static class LanguageSupport
 
 
         }
-        throw new Exception($"{langauge} is not supported check Languages Enum to see supported languages");
+        throw new BlinkException($"{langauge} is not supported check Languages Enum to see supported languages");
     }
 
 
