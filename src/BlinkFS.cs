@@ -336,18 +336,17 @@ static class BlinkFS
         string versionFolderPath = $".{Config.PathSeparator}.blink{Config.PathSeparator}bin{Config.PathSeparator}{lang}-{version}";
         versionFolderPath = MakePathAbsolute(versionFolderPath);
 
-        if (Directory.Exists(versionFolderPath) && Directory.EnumerateFiles($@"{versionFolderPath}{Config.PathSeparator}bin{Config.PathSeparator}").Count() > 0)
+        if (Directory.Exists(versionFolderPath) && Directory.EnumerateFiles($@"{versionFolderPath}{Config.PathSeparator}").Count() > 0)
         {
-            throw new BlinkFSException($"{lang} with version {version} is already installed in the blink environment if the binaries are not installed please delete the {lang}-{version} folder in .blink\\bin");
+            throw new BlinkFSException($"'{lang}' with version '{version}' is already installed in the blink environment if the binaries are not installed please delete the '{lang}-{version}' folder in .blink\\bin");
         }
 
         string absoluteFolderPath = MakePathAbsolute(versionFolderPath);
 
-        //TODO: add error handlign here
         CreateDirectory(absoluteFolderPath);
-        CreateDirectory(absoluteFolderPath + @$"{Config.PathSeparator}bin");
-        CreateDirectory(absoluteFolderPath + @$"{Config.PathSeparator}cache");
-
+        // CreateDirectory(absoluteFolderPath + @$"{Config.PathSeparator}bin");
+        // CreateDirectory(absoluteFolderPath + @$"{Config.PathSeparator}cache");
+        
         return absoluteFolderPath;
     }
 
