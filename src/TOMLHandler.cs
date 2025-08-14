@@ -7,12 +7,18 @@ using Tomlyn.Model;
 /// </summary>
 static class TOMLHandler
 {
+    /// <summary>
+    /// Gets the path from the toml and sets the blinkfs.path
+    /// </summary>
+    /// <returns></returns>
     public static void GetPathFromTOML()
     {
         TomlArray path = (TomlArray)GetVarFromConfigTOML(Config.PathKey);
         List<string> pathVars = TOMLArrayToList(path);
         BlinkFS.path = pathVars;
+
     }
+
     public static void PutPathToTOML()
     {
         TomlTable toml = GetConfigTOML();
@@ -52,8 +58,8 @@ static class TOMLHandler
     {
 
         return GetVarFromTOML(GetBuildTOML(), var, "build");
-        
-        
+
+
     }
 
 
@@ -113,7 +119,7 @@ static class TOMLHandler
     {
         TomlTable buildTOML = GetBuildTOML();
         List<string> commands = new();
-        
+
         foreach (object command in buildTOML.Keys)
         {
             string castedString;
@@ -130,6 +136,14 @@ static class TOMLHandler
         }
 
         return commands;
+    }
+
+
+    public static List<string> GetAllPathVarsInConfigTOML()
+    {
+        TomlArray path = (TomlArray)GetVarFromConfigTOML(Config.PathKey);
+        List<string> pathVars = TOMLArrayToList(path);
+        return pathVars;
     }
 
 }

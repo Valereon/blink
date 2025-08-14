@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using System.Dynamic;
+using System.Linq.Expressions;
 using DotMake.CommandLine;
 
 
@@ -44,24 +45,11 @@ class BlinkCLI
         public string[] Args { get; set; } = Array.Empty<string>();
 
 
-        [CliOption(Description = "Lists all of the commands inside of Build.toml", Required = false, Name = "List")]
-        public bool list { get; set; }
-
-
 
         public void Run()
         {
             try
             {
-                if (list)
-                {
-                    List<string> commands = TOMLHandler.GetAllCommandsInBuildTOML();
-                    foreach (string command in commands)
-                    {
-                        Console.WriteLine(command);
-                    }
-                    return;
-                }
 
 
                 ProgramRunner.SetupEnv();
@@ -113,6 +101,7 @@ class BlinkCLI
 
                 BlinkFS.AddProgramToPath(BlinkFS.MakePathRelative(Path));
                 TOMLHandler.PutPathToTOML();
+                Console.WriteLine($"'{Path}' successfully added to the path. You can now use it as '{System.IO.Path.GetFileName(Path)}' in commands and args");
             }
             catch (BlinkException ex)
             {
@@ -135,13 +124,14 @@ class BlinkCLI
     }
 
 
+
     [CliCommand(Name = "langAdd")]
     public class Add
     {
         [CliArgument(Name = "language", Description = "the name of the language you want to install")]
         public string Language { get; set; } = string.Empty;
 
-        [CliArgument(Name = "version", Description = "you put the version number as denoted by the target language ex 3.1 or 24.12.3")]
+        [CliArgument(Name = "version", Description = "you put the version number as denoted by the target language ex '3.1' or '24.12.3'")]
         public string Version { get; set; } = string.Empty;
 
         public void Run()
@@ -151,6 +141,35 @@ class BlinkCLI
         }
     }
 
+    [CliCommand(Name = "listPath")]
+    public class ListPath
+    {
+        public void Run()
+        {
+            List<string> pathVars = TOMLHandler.GetAllPathVarsInConfigTOML();
+
+            foreach (string var in pathVars)
+            {
+                Console.WriteLine(var);
+            }
+
+        }
+    }
+
+    [CliCommand(Name = "listBuildCommands")]
+    public class ListBuildCommands
+    {
+        public void Run()
+        {
+            List<string> commands = TOMLHandler.GetAllCommandsInBuildTOML();
+            foreach (string command in commands)
+            {
+                Console.WriteLine(command);
+            }
+        }
+
+
+    }
 
 
     public class Export
