@@ -6,7 +6,13 @@ Blink is my attempt to solve "it works on my machine." The goal of blink is to h
 
 
 # DISCLAIMER
-this DOES NOT work for things that need hardware configurations or need to be installed such as custom programs, drivers, or other things you need to install manually onto your system, or edit registry or things like that. For those types of things you can make a script that will install them. THIS only works with things that can be considered portable. So included are standalone language binaries, and the packages don't need to be installed  they are just referenced so this works. Still a lot of things SHOULD work its just programs or apps that need configurations that cannot be transferred via a file or directory.
+this DOES NOT work for things that need hardware configurations or need to be installed such as custom drivers, or other things you need to install manually onto your system, and require specific hardware level things, or edit registry or things like that. For those types of things you can make a script that will install them. THIS only works with things that can be considered portable. So included are standalone language binaries, and the packages don't need to be installed  they are just referenced so this works. Still a lot of things SHOULD work its just programs or apps that need configurations that cannot be transferred via a file or directory.
+
+
+
+
+
+If the program can be installed into a specific directory such as `.\.blink\custom\` and all its required files are inside that you CAN make it apart of your installation
 
 
 # Pros and Cons
@@ -29,13 +35,12 @@ Now there are some tradeoffs with this approach of course. I want to mention the
 - Cross Language
 
 
-
 ## Using the blink environment and specific quirks
 - Since blink has its own path, there is a caveat with using it. You have to preface every command with `blink run {command}`
 - for running commands with args you need to add `--args` e.x `blink run python --args main.py`.
 - Adding custom commands is done in Build.toml, any command can be added and will be executed using `blink run {commandName}` commands in build.toml DO NOT NEED --args bc this just executes them normally. The command line tool needs a flag for optional args which is why `--args` is required
 - Language binaries are all the standalone versions that don't need installing
-- Package managers MUST USE `blink run` or else it will not use the blink specific manager and install it system wide `blink run pip --args install numpy`
+- Package managers MUST USE `blink run` or else it will not use the blink specific manager and install it system wide e.x `blink run pip --args install numpy`
 - Packages install were the usually would (most of the time see below)
 
 ## Quick Start
@@ -83,6 +88,11 @@ you CAN use things on the path inside of the build.toml and also you DON'T NEED 
     foo = "ls -l"
 ```
 all you do is run `blink run build` or `blink run foo` you can name these commands anything you want.
+
+
+## Other Langauge Support
+Any langauge is technically automatically supported. All you need to do is get the standalone binaries from the website and set it up in `\.blink\bin\yourLang` and then do a `blink pa .\blink\bin\yourLang\languageExecutable` and the same with the package manager. Only issue is you have to figure out how to make the package manager behave so that it installs inside of the blink folder. Then you can do as you would!
+
 
 
 ### The Process Behind Blink
