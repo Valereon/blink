@@ -215,9 +215,10 @@ static class BlinkFS
     /// </summary>
     public static string MakePathRelative(string path)
     {
+        Console.WriteLine(path);
         if (path.Contains(fileSystemRoot))
         {
-            return path.Replace(fileSystemRoot, @$".{Config.PathSeparator}");
+            return path.Replace(fileSystemRoot, @$".");
         }
         else
         {

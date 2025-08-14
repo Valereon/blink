@@ -1,6 +1,8 @@
+using System.Collections.Specialized;
 using System.IO.Compression;
 using System.Net;
 using DotMake.CommandLine;
+using Microsoft.VisualBasic;
 using Tomlyn.Model;
 
 public static class LanguageInstaller
@@ -34,10 +36,65 @@ public static class LanguageInstaller
                 break;
         }
     }
-
+    //https://www.python.org/ftp/python/3.13.6/python-3.13.6-embed-amd64.zip
+    //windows!
     public static void InstallPython(string version)
     {
-        // DownloadFile();
+        string folderPath = BlinkFS.InitLanguageFolder(LanguageSupport.Language.Python, version);
+        string fileName = folderPath + @$"{Config.PathSeparator}Python-{version}.zip";
+        Console.WriteLine(fileName);
+        DownloadFile($"https://www.python.org/ftp/python/{version}/python-{version}-embed-amd64.zip", fileName);
+        DownloadFile($"https://bootstrap.pypa.io/pip/pip.pyz", $"{folderPath}{Config.PathSeparator}pip.pyz");
+
+
+        //create pip folder and shove pip in it
+        //.\.blink\bin\Python-3.13.6\pip\
+        BlinkFS.CreateDirectory($"{folderPath}{Config.PathSeparator}pip{Config.PathSeparator}");
+        File.Move(folderPath + Config.PathSeparator + "pip.pyz", $"{folderPath}{Config.PathSeparator}pip{Config.PathSeparator}pip.pyz");
+
+        ZipFile.ExtractToDirectory(fileName, $"{folderPath}");
+        BlinkFS.DeleteFile(fileName);
+        TOMLHandler.GetPathFromTOML();
+
+
+        //.\.blink\bin\Python-3.13.6\python.exe
+        string relPython = BlinkFS.MakePathRelative(folderPath + @$"{Config.PathSeparator}python.exe");
+        //.\.blink\bin\Python-3.13.6\pip\pip.pyz
+        string relPip = BlinkFS.MakePathRelative(folderPath + @$"{Config.PathSeparator}pip{Config.PathSeparator}pip.pyz");
+
+
+        //.\.blink\bin\Python-3.13.6\python313._pth
+        // take the dumb version and turn it into python313 from 3.13.6
+        // this is needed to recognize site packages for python, for per install shit.
+        string pthFileVersion = System.Text.RegularExpressions.Regex.Replace(version, @"\b(\d+)\.(\d+)\.\d+\b", "$1$2");
+        EditPythonPathFile(folderPath + $"{Config.PathSeparator}python{pthFileVersion}._pth");
+
+
+
+        if (BlinkFS.IsProgramInPath("python.exe") == false && BlinkFS.IsProgramInPath("pip.pyz") == false)
+        {
+            BlinkFS.AddProgramToPath(relPip);
+            BlinkFS.AddProgramToPath(relPython);
+        }
+        else
+        {
+            Console.WriteLine($"Since python.exe and pip are on the path an alias will be made of 'python{version}' and 'pip{version}' inside of build.toml so use 'python{version} main.py' or 'pip{version} install numpy' you can change the name of the alias in build.toml");
+
+            TomlTable table = TOMLHandler.GetBuildTOML();
+
+
+            if (!table.ContainsKey($"python{version}"))
+                table.Add($"python{version}", relPython);
+            if (!table.ContainsKey($"pip{version}"))
+                // this pip needs to be run by python so we do that in the build.toml
+                table.Add($"pip{version}", $"{relPython} {relPip}");
+
+
+            TOMLHandler.PutTOML(table, Config.BuildTomlPath);
+            Console.WriteLine($"build.toml written, you can now use 'python{version}' or 'pip{version}' for this specific version. for the default python install please use 'python'");
+        }
+
+        TOMLHandler.PutPathToTOML();
     }
 
     //https://nodejs.org/dist/v22.17.1/node-v22.17.1-win-x64.zip
@@ -49,14 +106,17 @@ public static class LanguageInstaller
         Console.WriteLine(fileName);
         DownloadFile($"https://nodejs.org/dist/v{version}/node-v{version}-win-x64.zip", fileName);
 
-        ZipFile.ExtractToDirectory(fileName, @$"{folderPath}");
+        ZipFile.ExtractToDirectory(fileName, $"{folderPath}");
         BlinkFS.DeleteFile(fileName);
         TOMLHandler.GetPathFromTOML();
 
+        string relNode = BlinkFS.MakePathRelative(folderPath + @$"{Config.PathSeparator}node-v{version}-win-x64{Config.PathSeparator}node.exe");
+        string relNPM = BlinkFS.MakePathRelative(folderPath + @$"{Config.PathSeparator}node-v{version}-win-x64{Config.PathSeparator}npm.cmd");
+        
         if (BlinkFS.IsProgramInPath("node.exe") == false && BlinkFS.IsProgramInPath("npm.cmd") == false)
         {
-            string relNode = BlinkFS.MakePathRelative(folderPath + @$"{Config.PathSeparator}node-v{version}-win-x64{Config.PathSeparator}node.exe");
-            string relNPM = BlinkFS.MakePathRelative(folderPath + @$"{Config.PathSeparator}node-v{version}-win-x64{Config.PathSeparator}npm.cmd");
+
+
             BlinkFS.AddProgramToPath(relNode);
             BlinkFS.AddProgramToPath(relNPM);
 
@@ -67,12 +127,12 @@ public static class LanguageInstaller
 
             TomlTable table = TOMLHandler.GetBuildTOML();
 
-            string relNode = BlinkFS.MakePathRelative(folderPath + @$"{Config.PathSeparator}node-v{version}-win-x64{Config.PathSeparator}node.exe");
-            string relNPM = BlinkFS.MakePathRelative(folderPath + @$"{Config.PathSeparator}node-v{version}-win-x64{Config.PathSeparator}npm.cmd");
 
-            if(!table.ContainsKey($"node{version}"))
+
+
+            if (!table.ContainsKey($"node{version}"))
                 table.Add($"node{version}", relNode);
-            if(!table.ContainsKey($"npm{version}"))
+            if (!table.ContainsKey($"npm{version}"))
                 table.Add($"npm{version}", relNPM);
 
 
@@ -83,6 +143,15 @@ public static class LanguageInstaller
         TOMLHandler.PutPathToTOML();
     }
 
+
+    public static void EditPythonPathFile(string filePath)
+    {
+        string file = BlinkFS.ReadFile(filePath);
+
+        file = file.Replace("#import site", "import site");
+
+        BlinkFS.WriteFile(filePath, file);
+    }
 
 
 }
