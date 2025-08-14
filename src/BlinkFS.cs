@@ -24,11 +24,6 @@ static class BlinkFS
         }
     }
 
-    /// <summary>
-    /// reads a file till the end, takes a path
-    /// </summary>
-    /// <param name="filePath"></param>
-    /// <returns></returns>
     public static string ReadFile(string filePath)
     {
 
@@ -192,7 +187,7 @@ static class BlinkFS
         {
             if (path.Contains($@".{Config.PathSeparator}"))
             {
-                path = Regex.Replace(path, @"\.[/\\]", Config.PathSeparator);
+                Path.GetFullPath(Path.Combine(fileSystemRoot, path));
             }
         }
         else
@@ -344,8 +339,6 @@ static class BlinkFS
         string absoluteFolderPath = MakePathAbsolute(versionFolderPath);
 
         CreateDirectory(absoluteFolderPath);
-        // CreateDirectory(absoluteFolderPath + @$"{Config.PathSeparator}bin");
-        // CreateDirectory(absoluteFolderPath + @$"{Config.PathSeparator}cache");
         
         return absoluteFolderPath;
     }

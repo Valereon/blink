@@ -70,14 +70,15 @@ public static class LanguageInstaller
             string relNode = BlinkFS.MakePathRelative(folderPath + @$"{Config.PathSeparator}node-v{version}-win-x64{Config.PathSeparator}node.exe");
             string relNPM = BlinkFS.MakePathRelative(folderPath + @$"{Config.PathSeparator}node-v{version}-win-x64{Config.PathSeparator}npm.cmd");
 
-            table.Add($"node{version}", relNode);
-            table.Add($"npm{version}", relNPM);
-            TOMLHandler.PutTOML(table, Config.BuildTomlPath);
+            if(!table.ContainsKey($"node{version}"))
+                table.Add($"node{version}", relNode);
+            if(!table.ContainsKey($"npm{version}"))
+                table.Add($"npm{version}", relNPM);
 
+
+            TOMLHandler.PutTOML(table, Config.BuildTomlPath);
             Console.WriteLine($"build.toml written, you can now use 'node{version} or 'npm{version}' for this specific version. for the default node install please use 'node'");
         }
-
-
 
         TOMLHandler.PutPathToTOML();
     }

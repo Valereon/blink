@@ -121,54 +121,13 @@ public static class ProgramRunner
                 FileName = name,
                 Arguments = $"{combinedArgs}",
                 UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardInput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true
 
             }
         };
 
         proc.Start();
-
-        proc.OutputDataReceived += (sender, e) =>
-        {
-            if (e.Data != null)
-                Console.WriteLine(e.Data);
-        };
-        proc.ErrorDataReceived += (sender, e) =>
-        {
-            if (e.Data != null)
-                Console.WriteLine(e.Data);
-        };
-
-        proc.BeginOutputReadLine();
-        proc.BeginErrorReadLine();
-
-        var inputTask = Task.Run(() =>
-        {
-            while (!proc.HasExited && Console.KeyAvailable)
-            {
-                try
-                {
-                    string? input = Console.ReadLine();
-                    if (!proc.HasExited && input != null)
-                    {
-                        proc.StandardInput.WriteLine(input);
-                        proc.StandardInput.Flush();
-                    }
-                }
-                catch (InvalidOperationException)
-                {
-                    break;
-                }
-            }
-        });
-
         proc.WaitForExit();
-
-        inputTask.Wait(1000);
-
+        Environment.Exit(0);
     }
 }
 
