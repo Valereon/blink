@@ -1,6 +1,5 @@
 
 using System.IO.Compression;
-using System.Text.RegularExpressions;
 using Tomlyn.Model;
 
 /// <summary>
@@ -215,7 +214,6 @@ static class BlinkFS
     /// </summary>
     public static string MakePathRelative(string path)
     {
-        Console.WriteLine(path);
         if (path.Contains(fileSystemRoot))
         {
             return path.Replace(fileSystemRoot, @$".");
@@ -252,7 +250,6 @@ static class BlinkFS
     {
         if (root != currentDir)
         {
-            IsValidBlinkEnvironment();
             MakeDirFileSystemRoot(currentDir);
 
             return currentDir;
@@ -276,10 +273,19 @@ static class BlinkFS
         string currentDir = Directory.GetCurrentDirectory();
         fileSystemRoot = currentDir;
 
+
         IsValidBlinkEnvironment();
         IsBlinkFileStructureValid();
 
+
         string root = (string)TOMLHandler.GetVarFromConfigTOML(Config.FileSystemRoot);
+
+
+        // make sure shit is releative then reload and write the path
+        TOMLHandler.GetPathFromTOML();
+        MakeSurePathVarsAreRelative();
+        TOMLHandler.PutPathToTOML();
+
 
         root = DidFileSystemRootChange(root, currentDir);
         fileSystemRoot = root;
@@ -319,11 +325,11 @@ static class BlinkFS
             return;
 
         if (!configExists)
-            throw new BlinkFSException($"The Config TOML does not exist in the .blink folder for blink to work you need to restore it or run blink verify --fix for a pre configured TOML");
+            throw new BlinkFSException($"The Config TOML does not exist in the .blink folder for blink to work you need to restore it or run blink verify for a pre configured TOML");
         if (!buildExists)
-            throw new BlinkFSException($"The Build TOML does not exist in the .blink folder for blink to work properly you need to restore it or run blink verify --fix for a new build TOML");
+            throw new BlinkFSException($"The Build TOML does not exist in the .blink folder for blink to work properly you need to restore it or run blink verify for a new build TOML");
         if (!binExists)
-            throw new BlinkFSException($"the .blink folder does not contain a bin folder this is essential for language support so please revert it or run blink verify --fix to fix");
+            throw new BlinkFSException($"the .blink folder does not contain a bin folder this is essential for language support so please revert it or create a bin folder");
 
     }
 
@@ -340,12 +346,18 @@ static class BlinkFS
         string absoluteFolderPath = MakePathAbsolute(versionFolderPath);
 
         CreateDirectory(absoluteFolderPath);
-        
+
         return absoluteFolderPath;
     }
 
-    public static void FixFileStructure()
+
+    public static void MakeSurePathVarsAreRelative()
     {
-        return;
+        for (int i = 0; i < path.Count; i++)
+        {
+            path[i] = MakePathRelative(path[i]);
+        }
     }
+
+
 }

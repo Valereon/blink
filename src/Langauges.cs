@@ -32,6 +32,6 @@ public static class LanguageSupport
 
 
         }
-        throw new BlinkException($"'{langauge}' is not supported check Languages Enum. To see supported languages");
+        throw new BlinkException($"'{langauge}' is not supported check Readme To see supported languages");
     }
 }

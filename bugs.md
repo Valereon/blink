@@ -1,1 +1,0 @@
-- the input redirect in the start process has some issues with reading that its causing you to have to press enter multiple times to start the program or end it : input.py in blink-example

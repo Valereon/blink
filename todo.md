@@ -1,16 +1,11 @@
 
 
 ## do now
-- a add python and fetches the binaries from python.com and sets it up gracefully inside the proper folder and add the folders and add the binary to the path
-- dont froget to add the package managers short hand t o build.toml like pip and npm
-
-- make a verify method that goes through both TOMls and makes sure the paths are relative to the project root
 
 
 ## Med priority
-- make blank toml to copy for projects that include all the settings
+
 - improve ux in the command line and understanding of the tool
-- command to list all path files and their paths
 
 
 

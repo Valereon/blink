@@ -30,4 +30,17 @@ public static class Config
     {
         PathSeparator = Path.DirectorySeparatorChar.ToString();
     }
+
+    public const string BaseConfigTOML = """
+    path = [] # NEVER SHOULD BE ABSOLUTE
+    fileSystemRoot = "D:\\Github\\GitHub\\BlinkOS\\blink-example1" # ABSOLUTE
+    targetPlatforms = ["windows"]    
+    """;
+
+
+    public const string BaseBuildTOML = """
+    test = "echo 'hello'"
+
+
+    """;
 }

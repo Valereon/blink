@@ -1,10 +1,16 @@
-﻿using System.Dynamic;
-using System.Linq.Expressions;
-using DotMake.CommandLine;
+﻿using DotMake.CommandLine;
 
 
-BlinkFS.LoadFileSystem();
-Cli.Run<BlinkCLI>(args);
+
+try
+{
+    Cli.Run<BlinkCLI>(args);
+}
+catch (BlinkException ex)
+{
+    Console.WriteLine(ex.Message);
+    Environment.Exit(1);
+}
 /// <summary>
 /// The Class that contains all command line commands using dot makeCLI
 /// </summary>
@@ -13,24 +19,17 @@ class BlinkCLI
 {
 
 
-
     [CliCommand(Description = "Inits a blink project in the current directory")]
     public class Init
     {
         public void Run()
         {
-            try
-            {
-                BlinkFS.CreateDirectory(BlinkFS.MakePathAbsolute(@".\.blink"));
-                BlinkFS.CreateDirectory(BlinkFS.MakePathAbsolute(@".\.blink\bin"));
-                BlinkFS.WriteFile(BlinkFS.MakePathAbsolute(@".\.blink\config.toml"), string.Empty); //TODO: have a base toml file to write to these things
-                BlinkFS.WriteFile(BlinkFS.MakePathAbsolute(@".\.blink\build.toml"), string.Empty);
-            }
-            catch (BlinkFSException ex)
-            {
-                Console.WriteLine(ex.Message);
-                Environment.Exit(1);
-            }
+
+            BlinkFS.CreateDirectory(BlinkFS.MakePathAbsolute(@".\.blink"));
+            BlinkFS.CreateDirectory(BlinkFS.MakePathAbsolute(@".\.blink\bin"));
+            BlinkFS.CreateDirectory(BlinkFS.MakePathAbsolute(@".\.blink\custom"));
+            BlinkFS.WriteFile(BlinkFS.MakePathAbsolute(@".\.blink\config.toml"), Config.BaseConfigTOML); //TODO: have a base toml file to write to these things
+            BlinkFS.WriteFile(BlinkFS.MakePathAbsolute(@".\.blink\build.toml"), Config.BaseBuildTOML);
         }
 
     }
@@ -48,36 +47,26 @@ class BlinkCLI
 
         public void Run()
         {
-            try
+            BlinkFS.LoadFileSystem();
+
+
+            ProgramRunner.SetupEnv();
+            Args = ProgramRunner.PrepareArguments(Args);
+
+            if (BlinkFS.IsProgramInPath(Name))
             {
-
-
-                ProgramRunner.SetupEnv();
-
-
-
-                Args = ProgramRunner.PrepareArguments(Args);
-                // Args = LanguageSupport.GetPackageManagerArgs(Name, Args);
-
-                if (BlinkFS.IsProgramInPath(Name))
-                {
-                    ProgramRunner.StartProgram(Name, Args);
-                }
-                else if (Name.Contains(@$".{Config.PathSeparator}"))
-                {
-                    ProgramRunner.StartProgram(BlinkFS.MakePathAbsolute(Name), Args);
-                }
-                else
-                {
-                    ProgramRunner.TOMLArbitraryRun(Name, Args);
-                }
-
+                ProgramRunner.StartProgram(Name, Args);
             }
-            catch (BlinkException ex)
+            else if (Name.Contains(@$".{Config.PathSeparator}"))
             {
-                Console.WriteLine(ex.Message);
-                Environment.Exit(1);
+                ProgramRunner.StartProgram(BlinkFS.MakePathAbsolute(Name), Args);
             }
+            else
+            {
+                ProgramRunner.TOMLArbitraryRun(Name, Args);
+            }
+
+
 
 
         }
@@ -92,22 +81,16 @@ class BlinkCLI
         public void Run()
         {
 
-            try
-            {
-                TOMLHandler.GetPathFromTOML();
-                if (Path == null || Path == string.Empty)
-                    throw new BlinkException("program path cannot be null or empty");
+            BlinkFS.LoadFileSystem();
+            TOMLHandler.GetPathFromTOML();
+            if (Path == null || Path == string.Empty)
+                throw new BlinkException("program path cannot be null or empty");
 
 
-                BlinkFS.AddProgramToPath(BlinkFS.MakePathRelative(Path));
-                TOMLHandler.PutPathToTOML();
-                Console.WriteLine($"'{Path}' successfully added to the path. You can now use it as '{System.IO.Path.GetFileName(Path)}' in commands and args");
-            }
-            catch (BlinkException ex)
-            {
-                Console.WriteLine(ex.Message);
-                Environment.Exit(1);
-            }
+            BlinkFS.AddProgramToPath(BlinkFS.MakePathRelative(Path));
+            TOMLHandler.PutPathToTOML();
+            Console.WriteLine($"'{Path}' successfully added to the path. You can now use it as '{System.IO.Path.GetFileName(Path)}' in commands and args");
+
 
         }
     }
@@ -119,6 +102,7 @@ class BlinkCLI
         public bool Fix { get; set; } = false;
         public void Run()
         {
+            BlinkFS.LoadFileSystem();
             BlinkFS.IsBlinkFileStructureValid();
         }
     }
@@ -126,7 +110,7 @@ class BlinkCLI
 
 
     [CliCommand(Name = "langAdd")]
-    public class Add
+    public class LangAdd
     {
         [CliArgument(Name = "language", Description = "the name of the language you want to install")]
         public string Language { get; set; } = string.Empty;
@@ -136,6 +120,13 @@ class BlinkCLI
 
         public void Run()
         {
+            BlinkFS.LoadFileSystem();
+            if (Language == null || Language == string.Empty)
+                throw new BlinkException("LangAdd: Language Cannot be null");
+
+            if (Version == null || Version == string.Empty)
+                throw new BlinkException("LangAdd: Version cannot be null");
+
             LanguageSupport.Language lang = LanguageSupport.StringToEnumLang(Language);
             LanguageInstaller.InstallLanguage(lang, Version);
         }
@@ -146,9 +137,9 @@ class BlinkCLI
     {
         public void Run()
         {
-            List<string> pathVars = TOMLHandler.GetAllPathVarsInConfigTOML();
+            BlinkFS.LoadFileSystem();
 
-            foreach (string var in pathVars)
+            foreach (string var in BlinkFS.path)
             {
                 Console.WriteLine(var);
             }
@@ -161,6 +152,7 @@ class BlinkCLI
     {
         public void Run()
         {
+            BlinkFS.LoadFileSystem();
             List<string> commands = TOMLHandler.GetAllCommandsInBuildTOML();
             foreach (string command in commands)
             {
@@ -170,20 +162,5 @@ class BlinkCLI
 
 
     }
-
-
-    public class Export
-    {
-        public void Run()
-        {
-
-        }
-    }
-
-
-
-
-
-
 }
 

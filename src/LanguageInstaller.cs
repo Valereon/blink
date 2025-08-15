@@ -1,8 +1,5 @@
-using System.Collections.Specialized;
 using System.IO.Compression;
 using System.Net;
-using DotMake.CommandLine;
-using Microsoft.VisualBasic;
 using Tomlyn.Model;
 
 public static class LanguageInstaller
