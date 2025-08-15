@@ -45,6 +45,10 @@ Now there are some tradeoffs with this approach of course. I want to mention the
 
 
 
+## Current Offically suported languages (see below)
+- python
+- nodejs
+
 
 ## Quick Start
 ```bash
@@ -72,19 +76,19 @@ Commands:
 mkdir myProject
 cd myProject
 blink init # AT THE TOP LEVEL OF YOUR PROJECT
-blink langAdd python 3.10
+blink langAdd python 3.10.1 # ALL 3 numbers
 
 #install dependencies
-blink run pip --args install http
-
-
-#create and run it
-echo "import http; print('Http is working!')" > main.py
+blink run pip --args install numpy
+```
+```python
+#create new python file
+import numpy
+print("Numpy is working!")
+```
+```bash
+#run it
 blink run python --args main.py
-
-
-# share it
-zip -r myProject.zip
 ```
 
 <br>
