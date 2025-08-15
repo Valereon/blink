@@ -48,7 +48,7 @@ public static class Config
     #BLINK: runs in the blink and if it fails then throws
     mode = "auto" # auto | shell | ask | blink     
 
-    shellPath = "cmd.exe"
+    shellExecutable = "cmd.exe"
     extraShellArgs = "/c"
     """;
 

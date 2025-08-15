@@ -114,7 +114,7 @@ public static class ProgramRunner
         {
             Console.Write("Blink execution failed would you like to run this in the shell instead? y/N: ");
             string? key = Console.ReadLine();
-            if (key.ToLower() == "y")
+            if (key?.ToLower() == "y")
             {
                 StartProgram(shellExe, shellArgs.ToArray());
             }

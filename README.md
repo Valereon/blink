@@ -43,7 +43,30 @@ Now there are some tradeoffs with this approach of course. I want to mention the
 - Package managers MUST USE `blink run` or else it will not use the blink specific manager and install it system wide e.x `blink run pip --args install numpy`
 - Packages install were the usually would (most of the time see below)
 
+
+
+
 ## Quick Start
+```bash
+The Blink CLI
+
+Usage:
+  blink [command] [options]
+
+Options:
+  -h, -?, --help  Show help and usage information
+  -v, --version   Show version information
+
+Commands:
+  i, init                 Inits a blink project in the current directory
+  r, run                  Runs a command inside the blink environment
+  pa, PathAdd             Adds a program or file to the blink path
+  v, verify               Automatically fixes fixable issues in blink
+  la, langAdd             Installs a standalone runtime of a specified supported language and version 
+  lp, listPath            lists all elements on the blink path
+  lbc, listBuildCommands  lists the name of all commands in the build.toml
+```
+
 ```bash
 #start project
 mkdir myProject

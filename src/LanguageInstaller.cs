@@ -72,7 +72,8 @@ public static class LanguageInstaller
         {
             BlinkFS.AddProgramToPath(relPip);
             BlinkFS.AddProgramToPath(relPython);
-        }
+            Console.WriteLine($"Python {version} and Pip {version} were added to the path! you can use them like 'blink run python -a main.py' and 'blink run pip -a install pygame'");
+        } 
         else
         {
             Console.WriteLine($"Since python.exe and pip are on the path an alias will be made of 'python{version}' and 'pip{version}' inside of build.toml so use 'python{version} main.py' or 'pip{version} install numpy' you can change the name of the alias in build.toml");
