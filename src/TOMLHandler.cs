@@ -61,6 +61,11 @@ static class TOMLHandler
 
     }
 
+    public static bool DoesKeyExistInTOML(string key, TomlTable table)
+    {
+        return table.ContainsKey(key);
+    }
+
 
     public static TomlTable GetConfigTOML()
     {

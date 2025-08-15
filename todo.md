@@ -1,6 +1,8 @@
 
 
 ## do now
+fix the wreird shell shit 
+
 
 
 ## Med priority

@@ -9,6 +9,10 @@ public static class Config
     public const string PathKey = "path";
     public const string LangsInProject = "langsInProject";
     public const string FileSystemRoot = "fileSystemRoot";
+    public const string FallbackMode = "mode";
+
+    public const string ShellExe = "shellExecutable";
+    public const string ShellExtraArgs = "extraShellArgs";
 
     public static string PathSeparator = @"\";
 
@@ -33,8 +37,19 @@ public static class Config
 
     public const string BaseConfigTOML = """
     path = [] # NEVER SHOULD BE ABSOLUTE
-    fileSystemRoot = "D:\\Github\\GitHub\\BlinkOS\\blink-example1" # ABSOLUTE
-    targetPlatforms = ["windows"]    
+    fileSystemRoot = "" # ABSOLUTE
+    targetPlatforms = []    
+    
+
+    # execution and fallback
+    #AUTO: falls back to shell when blink command does not work
+    #SHELL: runs always in the shell 
+    #ASK:  when blink run fails asks if should run in the shell
+    #BLINK: runs in the blink and if it fails then throws
+    mode = "auto" # auto | shell | ask | blink     
+
+    shellPath = "cmd.exe"
+    extraShellArgs = "/c"
     """;
 
 

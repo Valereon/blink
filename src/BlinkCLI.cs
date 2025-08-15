@@ -53,6 +53,22 @@ class BlinkCLI
             ProgramRunner.SetupEnv();
             Args = ProgramRunner.PrepareArguments(Args);
 
+            string fallbackMode = (string)TOMLHandler.GetVarFromConfigTOML(Config.FallbackMode);
+            fallbackMode = fallbackMode.ToLower();
+
+            // setup for shell fallback with custom shell exe and args
+            string shellExe = (string)TOMLHandler.GetVarFromConfigTOML(Config.ShellExe);
+            string ShellExtraArgs = (string)TOMLHandler.GetVarFromConfigTOML(Config.ShellExtraArgs);
+            List<string> shellArgs = Args.ToList();
+            shellArgs.Insert(0, ShellExtraArgs);
+
+            if (fallbackMode == "shell")
+            {
+                ProgramRunner.StartProgram(shellExe, shellArgs.ToArray());
+                return;
+            }
+
+
             if (BlinkFS.IsProgramInPath(Name))
             {
                 ProgramRunner.StartProgram(Name, Args);
@@ -63,11 +79,31 @@ class BlinkCLI
             }
             else
             {
-                ProgramRunner.TOMLArbitraryRun(Name, Args);
+
+                if (TOMLHandler.DoesKeyExistInTOML(Name, TOMLHandler.GetBuildTOML()))
+                {
+                    ProgramRunner.TOMLArbitraryRun(Name, Args);
+                }
+
+                if (fallbackMode == "auto")
+                {
+                    ProgramRunner.StartProgram(shellExe, shellArgs.ToArray());
+                }
+                else if (fallbackMode == "ask")
+                {
+                    Console.Write("Blink execution failed would you like to run this in the shell instead? y/N: ");
+                    string? key = Console.ReadLine();
+                    if (key.ToLower() == "y")
+                    {
+                        ProgramRunner.StartProgram(shellExe, shellArgs.ToArray());
+                    }
+
+                }
+
+
+                // blink fallback
+                throw new BlinkException($"running  '{Name} {Args}' has failed in blink");
             }
-
-
-
 
         }
     }

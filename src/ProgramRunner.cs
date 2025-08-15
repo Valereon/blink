@@ -79,14 +79,47 @@ public static class ProgramRunner
         }
         else
         {
+            // this if it runs the program will exit the blink app so no need to check and if it doesn't run it will move on
+            CheckAndRunFallbackMode(program, combinedArgs);
+
             if (!File.Exists(program))
                 throw new BlinkFSException($"File: '{program}' Does not exist, or is not in build.toml OR the path");
-            
+
+
             StartProgram(program, combinedArgs);
 
         }
     }
 
+    private static void CheckAndRunFallbackMode(string program, string[] args)
+    {
+
+        string fallbackMode = (string)TOMLHandler.GetVarFromConfigTOML(Config.FallbackMode);
+        fallbackMode = fallbackMode.ToLower();
+
+        string shellExe = (string)TOMLHandler.GetVarFromConfigTOML(Config.ShellExe);
+        string ShellExtraArgs = (string)TOMLHandler.GetVarFromConfigTOML(Config.ShellExtraArgs);
+        List<string> shellArgs = args.ToList();
+
+
+        shellArgs.Insert(0, ShellExtraArgs);
+        shellArgs.Insert(1, program);
+
+
+        if (fallbackMode == "auto")
+        {
+            StartProgram(shellExe, shellArgs.ToArray());
+        }
+        if (fallbackMode == "ask")
+        {
+            Console.Write("Blink execution failed would you like to run this in the shell instead? y/N: ");
+            string? key = Console.ReadLine();
+            if (key.ToLower() == "y")
+            {
+                StartProgram(shellExe, shellArgs.ToArray());
+            }
+        }
+    }
 
     /// <summary>
     ///  Starts a program given the args going and pipes the in,out,and errors into the console
@@ -120,7 +153,6 @@ public static class ProgramRunner
                 FileName = name,
                 Arguments = $"{combinedArgs}",
                 UseShellExecute = false,
-
             }
         };
 
@@ -128,5 +160,6 @@ public static class ProgramRunner
         proc.WaitForExit();
         Environment.Exit(0);
     }
+
 }
 
