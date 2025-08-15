@@ -66,19 +66,22 @@ public static class LanguageInstaller
         string pthFileVersion = System.Text.RegularExpressions.Regex.Replace(version, @"\b(\d+)\.(\d+)\.\d+\b", "$1$2");
         EditPythonPathFile(folderPath + $"{Config.PathSeparator}python{pthFileVersion}._pth");
 
-
+        TomlTable table = TOMLHandler.GetBuildTOML();
 
         if (BlinkFS.IsProgramInPath("python.exe") == false && BlinkFS.IsProgramInPath("pip.pyz") == false)
         {
             BlinkFS.AddProgramToPath(relPip);
             BlinkFS.AddProgramToPath(relPython);
+
+            table.Add("pip", relPython + " " + relPip);
+            TOMLHandler.PutTOML(table, Config.BuildTomlPath);
             Console.WriteLine($"Python {version} and Pip {version} were added to the path! you can use them like 'blink run python -a main.py' and 'blink run pip -a install pygame'");
         } 
         else
         {
             Console.WriteLine($"Since python.exe and pip are on the path an alias will be made of 'python{version}' and 'pip{version}' inside of build.toml so use 'python{version} main.py' or 'pip{version} install numpy' you can change the name of the alias in build.toml");
 
-            TomlTable table = TOMLHandler.GetBuildTOML();
+
 
 
             if (!table.ContainsKey($"python{version}"))
@@ -88,8 +91,8 @@ public static class LanguageInstaller
                 table.Add($"pip{version}", $"{relPython} {relPip}");
 
 
-            TOMLHandler.PutTOML(table, Config.BuildTomlPath);
             Console.WriteLine($"build.toml written, you can now use 'python{version}' or 'pip{version}' for this specific version. for the default python install please use 'python'");
+            TOMLHandler.PutTOML(table, Config.BuildTomlPath);
         }
 
         TOMLHandler.PutPathToTOML();

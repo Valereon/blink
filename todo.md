@@ -1,13 +1,11 @@
 
 
 ## do now
-fix the wreird shell shit 
 
 
 
 ## Med priority
 
-- improve ux in the command line and understanding of the tool
 
 
 
