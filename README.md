@@ -9,7 +9,7 @@ Blink is my attempt to solve "it works on my machine." The goal of blink is to h
 this DOES NOT work for things that need hardware configurations or need to be installed such as custom drivers, or other things you need to install manually onto your system, and require specific hardware level things, or edit registry or things like that. For those types of things you can make a script that will install them. THIS only works with things that can be considered portable. So included are standalone language binaries, and the packages don't need to be installed  they are just referenced so this works. Still a lot of things SHOULD work its just programs or apps that need configurations that cannot be transferred via a file or directory.
 
 
-
+[Video Demo](https://www.youtube.com/watch?v=MTUAuzqST6Y&)
 
 
 If the program can be installed into a specific directory such as `.\.blink\custom\` and all its required files are inside that you CAN make it apart of your installation
