@@ -1,7 +1,7 @@
 ﻿using DotMake.CommandLine;
 
 
-
+// This CLI library which handles most of the hard parts, has to be run like this. The BlinkCLI is a holder class and each internal class is a command.
 try
 {
     Cli.Run<BlinkCLI>(args);
@@ -28,7 +28,7 @@ class BlinkCLI
             BlinkFS.CreateDirectory(BlinkFS.MakePathAbsolute(@".\.blink"));
             BlinkFS.CreateDirectory(BlinkFS.MakePathAbsolute(@".\.blink\bin"));
             BlinkFS.CreateDirectory(BlinkFS.MakePathAbsolute(@".\.blink\custom"));
-            BlinkFS.WriteFile(BlinkFS.MakePathAbsolute(@".\.blink\config.toml"), Config.BaseConfigTOML); //TODO: have a base toml file to write to these things
+            BlinkFS.WriteFile(BlinkFS.MakePathAbsolute(@".\.blink\config.toml"), Config.BaseConfigTOML);
             BlinkFS.WriteFile(BlinkFS.MakePathAbsolute(@".\.blink\build.toml"), Config.BaseBuildTOML);
             Console.WriteLine("Project Init successful");
         }
@@ -51,61 +51,32 @@ class BlinkCLI
             BlinkFS.LoadFileSystem();
 
 
-            ProgramRunner.SetupEnv();
             Args = ProgramRunner.PrepareArguments(Args);
 
             string fallbackMode = (string)TOMLHandler.GetVarFromConfigTOML(Config.FallbackMode);
             fallbackMode = fallbackMode.ToLower();
 
             // setup for shell fallback with custom shell exe and args
-            string shellExe = (string)TOMLHandler.GetVarFromConfigTOML(Config.ShellExe);
-            string ShellExtraArgs = (string)TOMLHandler.GetVarFromConfigTOML(Config.ShellExtraArgs);
-            List<string> shellArgs = Args.ToList();
-            shellArgs.Insert(0, ShellExtraArgs);
+
 
             if (fallbackMode == "shell")
             {
-                ProgramRunner.StartProgram(shellExe, shellArgs.ToArray());
+                ProgramRunner.RunInShell(Name, Args);
                 return;
             }
 
-
-            if (BlinkFS.IsProgramInPath(Name))
-            {
-                ProgramRunner.StartProgram(Name, Args);
-            }
-            else if (Name.Contains(@$".{Config.PathSeparator}"))
-            {
-                ProgramRunner.StartProgram(BlinkFS.MakePathAbsolute(Name), Args);
-            }
-            else
-            {
-
-                if (TOMLHandler.DoesKeyExistInTOML(Name, TOMLHandler.GetBuildTOML()))
-                {
-                    ProgramRunner.TOMLArbitraryRun(Name, Args);
-                }
-
-                if (fallbackMode == "auto")
-                {
-                    ProgramRunner.StartProgram(shellExe, shellArgs.ToArray());
-                }
-                else if (fallbackMode == "ask")
-                {
-                    Console.Write("Blink execution failed would you like to run this in the shell instead? y/N: ");
-                    string? key = Console.ReadLine();
-                    if (key?.ToLower() == "y")
-                    {
-                        ProgramRunner.StartProgram(shellExe, shellArgs.ToArray());
-                    }
-
-                }
+            if (ProgramRunner.TryRunFromBuildTOML(Name, Args))
+                return;
+                
+            if (ProgramRunner.TryRunBlink(Name, Args))
+                return;
 
 
-                // blink fallback
-                throw new BlinkException($"running  '{Name} {Args}' has failed in blink");
-            }
+            if (ProgramRunner.TryHandleFallback(Name, Args))
+                return;
 
+
+            throw new BlinkException($"running  '{Name} {Args}' has failed in blink");
         }
     }
 
@@ -119,7 +90,6 @@ class BlinkCLI
         {
 
             BlinkFS.LoadFileSystem();
-            TOMLHandler.GetPathFromTOML();
             if (Path == null || Path == string.Empty)
                 throw new BlinkException("program path cannot be null or empty");
 
@@ -135,8 +105,8 @@ class BlinkCLI
     [CliCommand(Name = "verify", Description ="Automatically fixes fixable issues in blink")]
     public class Verify
     {
-        [CliOption(Name = "Fix", Required = false, Description = "Automatically fixes fixable issues in blink")]
-        public bool Fix { get; set; } = false;
+        // [CliOption(Name = "Fix", Required = false, Description = "Automatically fixes fixable issues in blink")]
+        // public bool Fix { get; set; } = false;
         public void Run()
         {
             BlinkFS.LoadFileSystem();

@@ -1,11 +1,25 @@
 using System.IO.Compression;
 using System.Net;
+using System.Runtime.CompilerServices;
 using Tomlyn.Model;
 
 public static class LanguageInstaller
 {
 
-    public static void DownloadFile(string url, string pathToSave)
+
+    public static void InstallLanguage(LanguageSupport.Language lang, string version)
+    {
+        switch (lang)
+        {
+            case LanguageSupport.Language.Python:
+                InstallPython(version);
+                break;
+            case LanguageSupport.Language.NodeJS:
+                InstallNodeJS(version);
+                break;
+        }
+    }
+    private static void DownloadFile(string url, string pathToSave)
     {
         using (WebClient wc = new WebClient())
         {
@@ -20,38 +34,26 @@ public static class LanguageInstaller
             }
         }
     }
-
-    public static void InstallLanguage(LanguageSupport.Language lang, string version)
-    {
-        switch (lang)
-        {
-            case LanguageSupport.Language.Python:
-                InstallPython(version);
-                break;
-            case LanguageSupport.Language.NodeJS:
-                InstallNodeJS(version);
-                break;
-        }
-    }
     //https://www.python.org/ftp/python/3.13.6/python-3.13.6-embed-amd64.zip
     //windows!
-    public static void InstallPython(string version)
+    private static void InstallPython(string version)
     {
         string folderPath = BlinkFS.InitLanguageFolder(LanguageSupport.Language.Python, version);
         string fileName = folderPath + @$"{Config.PathSeparator}Python-{version}.zip";
-        Console.WriteLine(fileName);
-        DownloadFile($"https://www.python.org/ftp/python/{version}/python-{version}-embed-amd64.zip", fileName);
-        DownloadFile($"https://bootstrap.pypa.io/pip/pip.pyz", $"{folderPath}{Config.PathSeparator}pip.pyz");
 
+
+        DownloadFile($"https://www.python.org/ftp/python/{version}/python-{version}-embed-amd64.zip", fileName);
+        // python
+        ZipFile.ExtractToDirectory(fileName, $"{folderPath}");
+        BlinkFS.DeleteFile(fileName);
 
         //create pip folder and shove pip in it
         //.\.blink\bin\Python-3.13.6\pip\
+        DownloadFile($"https://bootstrap.pypa.io/pip/pip.pyz", $"{folderPath}{Config.PathSeparator}pip.pyz");
         BlinkFS.CreateDirectory($"{folderPath}{Config.PathSeparator}pip{Config.PathSeparator}");
-        File.Move(folderPath + Config.PathSeparator + "pip.pyz", $"{folderPath}{Config.PathSeparator}pip{Config.PathSeparator}pip.pyz");
+        File.Move($"{folderPath}{Config.PathSeparator}pip.pyz", $"{folderPath}{Config.PathSeparator}pip{Config.PathSeparator}pip.pyz");
 
-        ZipFile.ExtractToDirectory(fileName, $"{folderPath}");
-        BlinkFS.DeleteFile(fileName);
-        TOMLHandler.GetPathFromTOML();
+
 
 
         //.\.blink\bin\Python-3.13.6\python.exe
@@ -67,40 +69,33 @@ public static class LanguageInstaller
         EditPythonPathFile(folderPath + $"{Config.PathSeparator}python{pthFileVersion}._pth");
 
         TomlTable table = TOMLHandler.GetBuildTOML();
+        Console.WriteLine(relPip);
+        Console.WriteLine(relPython);
 
         if (BlinkFS.IsProgramInPath("python.exe") == false && BlinkFS.IsProgramInPath("pip.pyz") == false)
         {
             BlinkFS.AddProgramToPath(relPip);
             BlinkFS.AddProgramToPath(relPython);
+            foreach(string i in BlinkFS.path)
+            {
+                Console.WriteLine(i);
+            }
 
-            table.Add("pip", relPython + " " + relPip);
+            table.Add("pip", $"{relPython} {relPip}");
             TOMLHandler.PutTOML(table, Config.BuildTomlPath);
             Console.WriteLine($"Python {version} and Pip {version} were added to the path! you can use them like 'blink run python -a main.py' and 'blink run pip -a install pygame'");
-        } 
+        }
         else
         {
-            Console.WriteLine($"Since python.exe and pip are on the path an alias will be made of 'python{version}' and 'pip{version}' inside of build.toml so use 'python{version} main.py' or 'pip{version} install numpy' you can change the name of the alias in build.toml");
-
-
-
-
-            if (!table.ContainsKey($"python{version}"))
-                table.Add($"python{version}", relPython);
-            if (!table.ContainsKey($"pip{version}"))
-                // this pip needs to be run by python so we do that in the build.toml
-                table.Add($"pip{version}", $"{relPython} {relPip}");
-
-
-            Console.WriteLine($"build.toml written, you can now use 'python{version}' or 'pip{version}' for this specific version. for the default python install please use 'python'");
-            TOMLHandler.PutTOML(table, Config.BuildTomlPath);
+            ResolveAlreadyOnPathConflict("python", version, "pip", relPython, relPip, $"pip{version}", $"{relPython} {relPip}");
         }
-
+        Console.WriteLine(BlinkFS.path);
         TOMLHandler.PutPathToTOML();
     }
 
     //https://nodejs.org/dist/v22.17.1/node-v22.17.1-win-x64.zip
     // windows!
-    public static void InstallNodeJS(string version)
+    private static void InstallNodeJS(string version)
     {
         string folderPath = BlinkFS.InitLanguageFolder(LanguageSupport.Language.NodeJS, version);
         string fileName = folderPath + @$"{Config.PathSeparator}NodeJS-{version}.zip";
@@ -113,7 +108,7 @@ public static class LanguageInstaller
 
         string relNode = BlinkFS.MakePathRelative(folderPath + @$"{Config.PathSeparator}node-v{version}-win-x64{Config.PathSeparator}node.exe");
         string relNPM = BlinkFS.MakePathRelative(folderPath + @$"{Config.PathSeparator}node-v{version}-win-x64{Config.PathSeparator}npm.cmd");
-        
+
         if (BlinkFS.IsProgramInPath("node.exe") == false && BlinkFS.IsProgramInPath("npm.cmd") == false)
         {
 
@@ -124,28 +119,48 @@ public static class LanguageInstaller
         }
         else
         {
-            Console.WriteLine($"Since Node.exe Is on the path an alias will be made of 'node{version}' inside of build.toml so use 'node{version} main.js' you can change the name of the alias in build.toml");
-
-            TomlTable table = TOMLHandler.GetBuildTOML();
-
-
-
-
-            if (!table.ContainsKey($"node{version}"))
-                table.Add($"node{version}", relNode);
-            if (!table.ContainsKey($"npm{version}"))
-                table.Add($"npm{version}", relNPM);
-
-
-            TOMLHandler.PutTOML(table, Config.BuildTomlPath);
-            Console.WriteLine($"build.toml written, you can now use 'node{version} or 'npm{version}' for this specific version. for the default node install please use 'node'");
+            ResolveAlreadyOnPathConflict("node", version, "npm", relNode, relNPM);
         }
-
         TOMLHandler.PutPathToTOML();
     }
 
 
-    public static void EditPythonPathFile(string filePath)
+    /// <summary>
+    /// resolves errors on the path IF PASSING CUSTOMPACKGEMANAGER OR CUSTOMSTRINGKEY PLEASE MAKE SURE BOTH OF THEM ARE FILLED OUT even if just passing one of them
+    /// </summary>
+    /// <param name="programName"></param>
+    /// <param name="version"></param>
+    /// <param name="packageManagerName"></param>
+    /// <param name="relProgram"></param>
+    /// <param name="relPackageManager"></param>
+    /// <param name="customPackageManagerStringKey"></param>
+    /// <param name="customPackageManagerStringObject"></param>
+    private static void ResolveAlreadyOnPathConflict(string programName, string version, string packageManagerName, string relProgram, string relPackageManager, string customPackageManagerStringKey = "", string customPackageManagerStringObject = "")
+    {
+
+        Console.WriteLine($"Since {programName}.exe Is on the path an alias will be made of '{programName}{version}' inside of build.toml so use '{programName}{version} main.yourLangExtension' you can change the name of the alias in build.toml");
+
+        TomlTable table = TOMLHandler.GetBuildTOML();
+
+        if (!table.ContainsKey($"{programName}{version}"))
+            table.Add($"{programName}{version}", relProgram);
+
+
+
+        if (!table.ContainsKey($"{packageManagerName}{version}") && !table.ContainsKey(packageManagerName))
+            if (customPackageManagerStringObject == string.Empty && customPackageManagerStringKey == string.Empty)
+                table.Add($"{packageManagerName}{version}", relPackageManager);
+            else
+                table.Add(customPackageManagerStringKey, customPackageManagerStringObject);
+
+
+
+
+        TOMLHandler.PutTOML(table, Config.BuildTomlPath);
+        Console.WriteLine($"build.toml written, you can now use '{programName}{version} or '{packageManagerName}{version}' for this specific version. for the default {programName} install please use '{programName}'");
+    }
+
+    private static void EditPythonPathFile(string filePath)
     {
         string file = BlinkFS.ReadFile(filePath);
 

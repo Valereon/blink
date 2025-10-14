@@ -1,26 +1,13 @@
+using System.Data;
 using System.Diagnostics;
+using System.Net.Http.Headers;
+using System.Text.RegularExpressions;
 
 /// <summary>
 /// This class handles running processes as well as preparing and cleaning arguments
 /// </summary>
 public static class ProgramRunner
 {
-    public static void SetupEnv()
-    {
-        TOMLHandler.GetPathFromTOML();
-    }
-    /// <summary>
-    /// makes arguments absolute paths for sake of robustness takes a string of args split by spaces
-    /// </summary>
-    public static string[] PrepareArguments(string arguments)
-    {
-        if (arguments == null)
-            return Array.Empty<string>();
-
-        string[] splitArgs = arguments.Split(" ");
-
-        return MakeArgsAbsolute(splitArgs);
-    }
     /// <summary>
     /// makes arguments absolute paths for sake of robustness takes an array of args
     /// </summary>
@@ -36,12 +23,12 @@ public static class ProgramRunner
     /// <summary>
     /// contains repetitive logic from PrepareArguments() and makes args absolute while ignoring flags
     /// </summary>
-    static string[] MakeArgsAbsolute(string[] arguments)
+    private static string[] MakeArgsAbsolute(string[] arguments)
     {
         for (int i = 0; i < arguments.Length; i++)
         {
-            //no file extension so skip. its an argument
-            if (!arguments[i].Contains("."))
+            //no file extension so skip. its an argument          
+            if (!Regex.Match(arguments[i], @"\.[^.]+$").Success)
                 continue;
             arguments[i] = BlinkFS.MakePathAbsolute(arguments[i]);
         }
@@ -71,7 +58,6 @@ public static class ProgramRunner
             combinedArgs = split;
 
 
-
         if (BlinkFS.IsProgramInPath(program))
         {
             string programOnPath = BlinkFS.GetProgramOnPathsFilePath(program);
@@ -80,10 +66,11 @@ public static class ProgramRunner
         else
         {
             // this if it runs the program will exit the blink app so no need to check and if it doesn't run it will move on
-            CheckAndRunFallbackMode(program, combinedArgs);
-
-            if (!File.Exists(program))
+            // does not check if the file exists? but when i was it was messing up with system commands so the user will just have to figure it out if their file doesnt exist. Windows should tell them
+            if (TOMLHandler.DoesKeyExistInTOML(program, TOMLHandler.GetBuildTOML()))
                 throw new BlinkFSException($"File: '{program}' Does not exist, or is not in build.toml OR the path");
+
+            TryHandleFallback(program, combinedArgs);
 
 
             StartProgram(program, combinedArgs);
@@ -91,41 +78,14 @@ public static class ProgramRunner
         }
     }
 
-    private static void CheckAndRunFallbackMode(string program, string[] args)
-    {
 
-        string fallbackMode = (string)TOMLHandler.GetVarFromConfigTOML(Config.FallbackMode);
-        fallbackMode = fallbackMode.ToLower();
-
-        string shellExe = (string)TOMLHandler.GetVarFromConfigTOML(Config.ShellExe);
-        string ShellExtraArgs = (string)TOMLHandler.GetVarFromConfigTOML(Config.ShellExtraArgs);
-        List<string> shellArgs = args.ToList();
-
-
-        shellArgs.Insert(0, ShellExtraArgs);
-        shellArgs.Insert(1, program);
-
-
-        if (fallbackMode == "auto")
-        {
-            StartProgram(shellExe, shellArgs.ToArray());
-        }
-        if (fallbackMode == "ask")
-        {
-            Console.Write("Blink execution failed would you like to run this in the shell instead? y/N: ");
-            string? key = Console.ReadLine();
-            if (key?.ToLower() == "y")
-            {
-                StartProgram(shellExe, shellArgs.ToArray());
-            }
-        }
-    }
 
     /// <summary>
     ///  Starts a program given the args going and pipes the in,out,and errors into the console
     /// </summary>
     public static void StartProgram(string name, string[] args)
     {
+        args = PrepareArguments(args);
 
         string combinedArgs = string.Empty;
         if (args != null)
@@ -158,8 +118,96 @@ public static class ProgramRunner
 
         proc.Start();
         proc.WaitForExit();
+        proc.Dispose();
         Environment.Exit(0);
     }
 
+
+
+    /// <summary>
+    /// tries to run in the blink environment
+    /// </summary>
+    /// <param name="name"></param>
+    /// <param name="args"></param>
+    /// <returns>true if it worked, false if it fails</returns>
+    public static bool TryRunBlink(string name, string[] args)
+    {
+
+        if (BlinkFS.IsProgramInPath(name))
+        {
+            StartProgram(name, args);
+            return true;
+        }
+        else if (name.Contains(@$".{Config.PathSeparator}"))
+        {
+            StartProgram(BlinkFS.MakePathAbsolute(name), args);
+            return true;
+        }
+
+        return false;
+    }
+
+
+    /// <summary>
+    /// Runs the program, and args in the windows shell, bypassing all blink features
+    /// </summary>
+    /// <param name="name"></param>
+    /// <param name="args"></param>
+    public static void RunInShell(string name, string[] args)
+    {
+        string shellExe = (string)TOMLHandler.GetVarFromConfigTOML(Config.ShellExe);
+        string ShellExtraArgs = (string)TOMLHandler.GetVarFromConfigTOML(Config.ShellExtraArgs);
+        List<string> shellArgs = args.ToList();
+        Console.WriteLine(shellExe);
+        shellArgs.Insert(0, name);
+        shellArgs.Insert(0, ShellExtraArgs);
+        StartProgram(shellExe, shellArgs.ToArray());
+    }
+
+    /// <summary>
+    /// tries to run a command in the build toml
+    /// </summary>
+    /// <param name="name"></param>
+    /// <param name="args"></param>
+    /// <returns>True if it ran, false otherwise</returns>
+    public static bool TryRunFromBuildTOML(string name, string[] args)
+    {
+        if (TOMLHandler.DoesKeyExistInTOML(name, TOMLHandler.GetBuildTOML()))
+        {
+            TOMLArbitraryRun(name, args);
+            return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Handles when blink run fails, will either auto run in shell or, ask you if you want to. This is based on Config.FallbackMode taken from the config.toml
+    /// </summary>
+    /// <param name="name"></param>
+    /// <param name="args"></param>
+    /// <returns>True if ran, otherwise false</returns>
+    public static bool TryHandleFallback(string name, string[] args)
+    {
+        string fallbackMode = (string)TOMLHandler.GetVarFromConfigTOML(Config.FallbackMode);
+        fallbackMode = fallbackMode.ToLower();
+        if (fallbackMode.ToLower() == "auto")
+        {
+            RunInShell(name, args);
+            return true;
+        }
+        else if (fallbackMode.ToLower() == "ask")
+        {
+            Console.Write("Blink execution failed would you like to run this in the shell instead? y/N: ");
+            string? key = Console.ReadLine();
+            if (key?.ToLower() == "y")
+            {
+                RunInShell(name, args);
+                return true;
+            }
+
+        }
+
+        return false;
+    }
 }
 

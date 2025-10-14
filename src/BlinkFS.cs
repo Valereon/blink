@@ -1,5 +1,6 @@
 
 using System.IO.Compression;
+using System.Text.RegularExpressions;
 using Tomlyn.Model;
 
 /// <summary>
@@ -9,20 +10,16 @@ static class BlinkFS
 {
     public static string fileSystemRoot = string.Empty;
 
+    // the blink path
     public static List<string> path = new();
 
-    public static void ZipFileSystem(string zipToPath)
-    {
-        try
-        {
-            ZipFile.CreateFromDirectory(fileSystemRoot, zipToPath);
-        }
-        catch (IOException e)
-        {
-            throw new BlinkFSException($"Error Zipping '{zipToPath}' : {e}");
-        }
-    }
-
+    /// <summary>
+    /// reads the entire file. 
+    /// 
+    /// </summary>
+    /// <param name="filePath"></param>
+    /// <returns>the whole file in one string</returns>
+    /// <exception cref="BlinkFSException">throws if could not read, or access the file</exception>
     public static string ReadFile(string filePath)
     {
 
@@ -68,6 +65,11 @@ static class BlinkFS
         }
     }
 
+    /// <summary>
+    /// Deletes a file given a path.
+    /// </summary>
+    /// <param name="filePath"></param>
+    /// <exception cref="BlinkFSException"></exception>
     public static void DeleteFile(string filePath)
     {
         filePath = MakePathAbsolute(filePath);
@@ -88,6 +90,11 @@ static class BlinkFS
         }
     }
 
+    /// <summary>
+    /// Creates a directory based on the filepath, new directory should be appeneded at the end so like c:\\user\\newDir\\
+    /// </summary>
+    /// <param name="filePath"></param>
+    /// <exception cref="BlinkFSException"></exception>
     public static void CreateDirectory(string filePath)
     {
         filePath = MakePathAbsolute(filePath);
@@ -104,6 +111,12 @@ static class BlinkFS
             throw new BlinkFSException($"Could not create directory '{filePath}' : {e} ");
         }
     }
+
+    /// <summary>
+    /// Deletes a directory given a path
+    /// </summary>
+    /// <param name="filePath"></param>
+    /// <exception cref="BlinkFSException"></exception>
     public static void DeleteDirectory(string filePath)
     {
         filePath = MakePathAbsolute(filePath);
@@ -125,15 +138,23 @@ static class BlinkFS
     }
 
 
+    /// <summary>
+    /// checks if program is on the BLINK path not sys path
+    /// </summary>
+    /// <param name="program"></param>
+    /// <returns>Returns true if on path, and false otherwise</returns>
     public static bool IsProgramInPath(string program)
     {
+        if (program == string.Empty || program == null)
+            return false;
+
+        program = TryRemoveFileExtension(program);
         foreach (string file in path)
         {
             string[] split = file.Split(Config.PathSeparator);
 
-            program = TryRemoveExeEnding(program);
-
-            if (program.Equals(TryRemoveExeEnding(split[split.Length - 1])))
+            string fileOnPath = TryRemoveFileExtension(split[split.Length - 1]);
+            if (program.Equals(fileOnPath))
                 return true;
         }
         return false;
@@ -146,13 +167,13 @@ static class BlinkFS
     /// <returns></returns>
     public static string GetProgramOnPathsFilePath(string program)
     {
+        program = TryRemoveFileExtension(program);
         foreach (string file in path)
         {
             string[] split = file.Split(Config.PathSeparator);
+            string fileOnPath = TryRemoveFileExtension(split[split.Length - 1]);
 
-            program = TryRemoveExeEnding(program);
-
-            if (program.Equals(TryRemoveExeEnding(split[split.Length - 1])))
+            if (program.Equals(fileOnPath))
                 return file;
         }
         return string.Empty;
@@ -160,7 +181,6 @@ static class BlinkFS
 
     /// <summary>
     /// simple add program to the current path and it only adds it to the instance path needs to be manually written to the TOML using TOMLHandler.PutPathTOML()
-    /// 
     /// </summary>
     /// <param name="program"></param>
     public static void AddProgramToPath(string program)
@@ -174,31 +194,23 @@ static class BlinkFS
 
 
     /// <summary>
-    /// This will take any path including relative paths. Clean them and turn them absolute including ".\" "\" or "python.exe"
+    /// This will take any path including relative paths. Clean them and turn them absolute including ".\" "\" or "python.exe" (which python.exe would be on the path)
     /// </summary>
     public static string MakePathAbsolute(string path)
     {
-        if (path == null)
+        if (path == null || path == string.Empty)
             return string.Empty;
 
-        //crude path check
-        if (path.Contains(Config.PathSeparator))
-        {
-            if (path.Contains($@".{Config.PathSeparator}"))
-            {
-                Path.GetFullPath(Path.Combine(fileSystemRoot, path));
-            }
-        }
-        else
-        {
-            if (IsProgramInPath(path))
-            {
-                return GetProgramOnPathsFilePath(path);
-            }
-        }
 
-
-        if (path.Contains(fileSystemRoot))
+        if (path.Contains($@".{Config.PathSeparator}"))
+        {
+            return Path.GetFullPath(Path.Combine(fileSystemRoot, path));
+        }
+        else if (IsProgramInPath(path))
+        {
+            return GetProgramOnPathsFilePath(path);
+        }
+        else if (path.Contains(fileSystemRoot))
         {
             return path;
         }
@@ -230,13 +242,13 @@ static class BlinkFS
 
     /// <summary>
     /// Tries to remove the exe ending from the path and if it cannot then it returns the original path
+    /// this is used for when a person enters a program on the paths name like "python" you remove the python.exe ending on the path so you can match them up
     /// </summary>
-    //TODO : CHANGE THIS TO BE FILE ENDING NOT JUST EXE
-    public static string TryRemoveExeEnding(string path)
+    private static string TryRemoveFileExtension(string path)
     {
-        if (path.EndsWith(".exe"))
+        if (Regex.Match(path, @"\.[^.]+$").Success)
         {
-            return path.Replace(".exe", string.Empty);
+            return Regex.Replace(path, @"\.[^.]+$", "");
         }
 
         return path;
@@ -246,7 +258,7 @@ static class BlinkFS
     /// Checks wether or not the file system root changed and if it did then to write that to the config.toml
     /// </summary>
     /// <returns>string: updated root. if updated otherwise unchanged root</returns>
-    public static string DidFileSystemRootChange(string root, string currentDir)
+    private static string DidFileSystemRootChange(string root, string currentDir)
     {
         if (root != currentDir)
         {
@@ -257,7 +269,11 @@ static class BlinkFS
         return root;
     }
 
-    public static void MakeDirFileSystemRoot(string newRoot)
+    /// <summary>
+    /// Edits the config.toml config.FileSystemRoot to be the current folder
+    /// </summary>
+    /// <param name="newRoot"></param>
+    private static void MakeDirFileSystemRoot(string newRoot)
     {
         TomlTable config = TOMLHandler.GetConfigTOML();
         config[Config.FileSystemRoot] = newRoot;
@@ -280,8 +296,6 @@ static class BlinkFS
 
         string root = (string)TOMLHandler.GetVarFromConfigTOML(Config.FileSystemRoot);
 
-
-        // make sure shit is releative then reload and write the path
         TOMLHandler.GetPathFromTOML();
         MakeSurePathVarsAreRelative();
         TOMLHandler.PutPathToTOML();
@@ -298,7 +312,7 @@ static class BlinkFS
     /// if the current directory is not valid it will throw a custom exception otherwise it will just do nothing
     /// </summary>
     /// <exception cref="InvalidBlinkEnvironment"></exception>
-    static void IsValidBlinkEnvironment()
+    private static void IsValidBlinkEnvironment()
     {
         foreach (string entry in Directory.GetDirectories(fileSystemRoot))
         {
@@ -335,6 +349,7 @@ static class BlinkFS
 
     public static string InitLanguageFolder(LanguageSupport.Language lang, string version)
     {
+        //EX: ".\.blink\bin\python-2.12.2"
         string versionFolderPath = $".{Config.PathSeparator}.blink{Config.PathSeparator}bin{Config.PathSeparator}{lang}-{version}";
         versionFolderPath = MakePathAbsolute(versionFolderPath);
 
@@ -351,7 +366,7 @@ static class BlinkFS
     }
 
 
-    public static void MakeSurePathVarsAreRelative()
+    private static void MakeSurePathVarsAreRelative()
     {
         for (int i = 0; i < path.Count; i++)
         {

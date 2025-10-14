@@ -9,24 +9,30 @@ static class TOMLHandler
     /// <summary>
     /// Gets the path from the toml and sets the blinkfs.path
     /// </summary>
-    /// <returns></returns>
     public static void GetPathFromTOML()
     {
         TomlArray path = (TomlArray)GetVarFromConfigTOML(Config.PathKey);
         List<string> pathVars = TOMLArrayToList(path);
         BlinkFS.path = pathVars;
-
     }
 
+    /// <summary>
+    /// Change the config.toml path to have the current path of the running instance
+    /// </summary>
     public static void PutPathToTOML()
     {
         TomlTable toml = GetConfigTOML();
         toml[Config.PathKey] = BlinkFS.path;
         PutTOML(toml, Config.ConfigTomlPath);
     }
+
     /// <summary>
-    /// Returns an object and you cast the type onto it based on what it is in the TOML
+    /// Gets the specified var from the provided TOML
     /// </summary>
+    /// <param name="tomlPath"></param>
+    /// <param name="var"></param>
+    /// <returns>Returns an object and you cast the type onto it based on what it is in the TOML</returns>
+    /// <exception cref="BlinkTOMLException"></exception>
     public static object GetVarFromTOML(string tomlPath, string var)
     {
         TomlTable table = GetTOML(tomlPath);
@@ -37,9 +43,17 @@ static class TOMLHandler
         return table[var];
     }
 
+
+
+
     /// <summary>
-    /// Returns an object and you cast the type onto it based on what it is in the TOML
+    /// Gets the specified var from the provided TOML
     /// </summary>
+    /// <param name="tomlTable"></param>
+    /// <param name="var"></param>
+    /// <param name="tomlName"></param>
+    /// <returns>Returns an object and you cast the type onto it based on what it is in the TOML</returns>
+    /// <exception cref="BlinkTOMLException"></exception>
     public static object GetVarFromTOML(TomlTable tomlTable, string var, string tomlName)
     {
         if (!tomlTable.ContainsKey(var))
@@ -48,30 +62,50 @@ static class TOMLHandler
         return tomlTable[var];
     }
 
+    /// <summary>
+    /// Gets the specified var from the config TOML
+    /// </summary>
+    /// <param name="var"></param>
+    /// <returns>Returns an object and you cast the type onto it based on what it is in the TOML</returns>
     public static object GetVarFromConfigTOML(string var)
     {
         return GetVarFromTOML(GetConfigTOML(), var, "config");
     }
 
+    /// <summary>
+    /// Gets the specified var from the build TOML
+    /// </summary>
+    /// <param name="var"></param>
+    /// <returns>Returns an object and you cast the type onto it based on what it is in the TOML</returns>
     public static object GetVarFromBuildTOML(string var)
     {
-
         return GetVarFromTOML(GetBuildTOML(), var, "build");
-
-
     }
 
+
+    /// <summary>
+    /// Does the provided key exist in the provided TOML
+    /// </summary>
+    /// <param name="key"></param>
+    /// <param name="table"></param>
+    /// <returns>true if it exists, and false if it doesn't</returns>
     public static bool DoesKeyExistInTOML(string key, TomlTable table)
     {
         return table.ContainsKey(key);
     }
 
-
+    /// <summary>
+    /// Gets the config TOML inside \blink
+    /// </summary>
+    /// <returns>TomlTable, the config TOML</returns>
     public static TomlTable GetConfigTOML()
     {
         return GetTOML(Config.ConfigTomlPath);
     }
-
+    /// <summary>
+    /// Gets the config TOML inside \blink
+    /// </summary>
+    /// <returns>TomlTable, the config TOML</returns>
     public static TomlTable GetBuildTOML()
     {
         return GetTOML(Config.BuildTomlPath);
@@ -92,13 +126,23 @@ static class TOMLHandler
         }
     }
 
-
+    /// <summary>
+    /// Takes the given TOML and puts it to a file on the specified path, TOML name must be included in path such as "\home\user\build.toml"
+    /// </summary>
+    /// <param name="tomlTable"></param>
+    /// <param name="path"></param>
     public static void PutTOML(TomlTable tomlTable, string path)
     {
         string textTOML = Toml.FromModel(tomlTable);
         BlinkFS.WriteFile(path, textTOML);
     }
 
+    /// <summary>
+    /// Takes a TOML array and converts to csharp list
+    /// </summary>
+    /// <param name="array"></param>
+    /// <returns>csharp list of TOML array</returns>
+    /// <exception cref="BlinkTOMLException"></exception>
     public static List<string> TOMLArrayToList(TomlArray array)
     {
         List<string> fixedTOMLArray = new();
@@ -119,6 +163,11 @@ static class TOMLHandler
         return fixedTOMLArray;
     }
 
+
+    /// <summary>
+    /// one off method that returns the name of all custom commands inside of Build TOML
+    /// </summary>
+    /// <returns>List<String> the name of all commands in build toml</returns>
     public static List<string> GetAllCommandsInBuildTOML()
     {
         TomlTable buildTOML = GetBuildTOML();
@@ -141,13 +190,4 @@ static class TOMLHandler
 
         return commands;
     }
-
-
-    public static List<string> GetAllPathVarsInConfigTOML()
-    {
-        TomlArray path = (TomlArray)GetVarFromConfigTOML(Config.PathKey);
-        List<string> pathVars = TOMLArrayToList(path);
-        return pathVars;
-    }
-
 }
