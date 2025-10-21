@@ -20,6 +20,7 @@ public static class Config
     public const string ConfigTomlPath = @".\.blink\config.toml";
     public const string BuildTomlPath = @".\.blink\build.toml";
 
+
     /// <summary>
     /// updates the path seperator for the current operating system
     /// </summary>
@@ -47,7 +48,7 @@ public static class Config
 
 
     public const string BaseBuildTOML = """
-    test = "echo 'hello'"
+    test = ["echo", "hello"]
 
 
     """;

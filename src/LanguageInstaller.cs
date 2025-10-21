@@ -69,27 +69,24 @@ public static class LanguageInstaller
         EditPythonPathFile(folderPath + $"{Config.PathSeparator}python{pthFileVersion}._pth");
 
         TomlTable table = TOMLHandler.GetBuildTOML();
-        Console.WriteLine(relPip);
-        Console.WriteLine(relPython);
 
         if (BlinkFS.IsProgramInPath("python.exe") == false && BlinkFS.IsProgramInPath("pip.pyz") == false)
         {
             BlinkFS.AddProgramToPath(relPip);
             BlinkFS.AddProgramToPath(relPython);
-            foreach(string i in BlinkFS.path)
-            {
-                Console.WriteLine(i);
-            }
 
-            table.Add("pip", $"{relPython} {relPip}");
+
+            List<string> buildList = [relPython, relPip];
+
+            table.Add("pip", buildList);
+
             TOMLHandler.PutTOML(table, Config.BuildTomlPath);
             Console.WriteLine($"Python {version} and Pip {version} were added to the path! you can use them like 'blink run python -a main.py' and 'blink run pip -a install pygame'");
         }
         else
         {
-            ResolveAlreadyOnPathConflict("python", version, "pip", relPython, relPip, $"pip{version}", $"{relPython} {relPip}");
+            ResolveAlreadyOnPathConflict("python", version, "pip", relPython, relPip, $"pip{version}", [relPython, relPip]);
         }
-        Console.WriteLine(BlinkFS.path);
         TOMLHandler.PutPathToTOML();
     }
 
@@ -104,7 +101,6 @@ public static class LanguageInstaller
 
         ZipFile.ExtractToDirectory(fileName, $"{folderPath}");
         BlinkFS.DeleteFile(fileName);
-        TOMLHandler.GetPathFromTOML();
 
         string relNode = BlinkFS.MakePathRelative(folderPath + @$"{Config.PathSeparator}node-v{version}-win-x64{Config.PathSeparator}node.exe");
         string relNPM = BlinkFS.MakePathRelative(folderPath + @$"{Config.PathSeparator}node-v{version}-win-x64{Config.PathSeparator}npm.cmd");
@@ -135,7 +131,7 @@ public static class LanguageInstaller
     /// <param name="relPackageManager"></param>
     /// <param name="customPackageManagerStringKey"></param>
     /// <param name="customPackageManagerStringObject"></param>
-    private static void ResolveAlreadyOnPathConflict(string programName, string version, string packageManagerName, string relProgram, string relPackageManager, string customPackageManagerStringKey = "", string customPackageManagerStringObject = "")
+    private static void ResolveAlreadyOnPathConflict(string programName, string version, string packageManagerName, string relProgram, string relPackageManager, string customPackageManagerStringKey = "", params List<string> customPackageManagerStringObject)
     {
 
         Console.WriteLine($"Since {programName}.exe Is on the path an alias will be made of '{programName}{version}' inside of build.toml so use '{programName}{version} main.yourLangExtension' you can change the name of the alias in build.toml");
@@ -143,13 +139,13 @@ public static class LanguageInstaller
         TomlTable table = TOMLHandler.GetBuildTOML();
 
         if (!table.ContainsKey($"{programName}{version}"))
-            table.Add($"{programName}{version}", relProgram);
+            table.Add($"{programName}{version}", new string[] { relProgram });
 
 
 
-        if (!table.ContainsKey($"{packageManagerName}{version}") && !table.ContainsKey(packageManagerName))
-            if (customPackageManagerStringObject == string.Empty && customPackageManagerStringKey == string.Empty)
-                table.Add($"{packageManagerName}{version}", relPackageManager);
+        if (!table.ContainsKey($"{packageManagerName}{version}") || !table.ContainsKey(packageManagerName))
+            if (customPackageManagerStringKey == string.Empty && customPackageManagerStringObject == null)
+                table.Add($"{packageManagerName}{version}", new string[] { relPackageManager });
             else
                 table.Add(customPackageManagerStringKey, customPackageManagerStringObject);
 

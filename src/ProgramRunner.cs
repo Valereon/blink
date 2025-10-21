@@ -2,6 +2,8 @@ using System.Data;
 using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
+using Tomlyn;
+using Tomlyn.Model;
 
 /// <summary>
 /// This class handles running processes as well as preparing and cleaning arguments
@@ -18,6 +20,7 @@ public static class ProgramRunner
 
 
         return MakeArgsAbsolute(arguments);
+        // return arguments;
     }
 
     /// <summary>
@@ -27,12 +30,31 @@ public static class ProgramRunner
     {
         for (int i = 0; i < arguments.Length; i++)
         {
-            //no file extension so skip. its an argument          
+            //no file extension so skip. its an argument or a folder?
             if (!Regex.Match(arguments[i], @"\.[^.]+$").Success)
                 continue;
-            arguments[i] = BlinkFS.MakePathAbsolute(arguments[i]);
+            if (!BlinkFS.IsProgramInPath(arguments[i]))
+            {
+                arguments[i] = BlinkFS.MakePathAbsolute(arguments[i]);
+                arguments[i] = Regex.Replace(arguments[i], @"^['""]|['""]$", "");
+            }
+
         }
         return arguments;
+    }
+
+    private static List<string> PrepareTOMLArgsRun(string command, string[] args)
+    {
+        TomlArray tomlArrCommand = (TomlArray)TOMLHandler.GetVarFromBuildTOML(command);
+
+        List<string> split = TOMLHandler.TOMLArrayToList(tomlArrCommand);
+
+        List<string> newSplit = PrepareArguments(split.ToArray()).ToList();
+
+
+
+        newSplit.AddRange(args);
+        return newSplit;
     }
 
     /// <summary>
@@ -40,41 +62,20 @@ public static class ProgramRunner
     /// </summary>
     public static void TOMLArbitraryRun(string command, string[] args)
     {
-        string commandToRun = (string)TOMLHandler.GetVarFromBuildTOML(command);
-        string[] split = commandToRun.Split(" ");
-        string program = split[0];
-
-
-        List<string> newSplit = split.ToList();
-        newSplit.Remove(program);
-        split = PrepareArguments(newSplit.ToArray());
-
-
-        // combine the args from the toml specified command and if theres any more args provided add them
-        string[] combinedArgs;
-        if (args != null)
-            combinedArgs = split.Concat(args).ToArray();
-        else
-            combinedArgs = split;
+        List<string> properArgs = PrepareTOMLArgsRun(command, args);
+        string program = properArgs[0];
+        properArgs.Remove(program);
+        Console.WriteLine(program);
 
 
         if (BlinkFS.IsProgramInPath(program))
         {
             string programOnPath = BlinkFS.GetProgramOnPathsFilePath(program);
-            StartProgram(programOnPath, combinedArgs);
+            StartProgram(programOnPath, properArgs.ToArray());
         }
         else
         {
-            // this if it runs the program will exit the blink app so no need to check and if it doesn't run it will move on
-            // does not check if the file exists? but when i was it was messing up with system commands so the user will just have to figure it out if their file doesnt exist. Windows should tell them
-            if (TOMLHandler.DoesKeyExistInTOML(program, TOMLHandler.GetBuildTOML()))
-                throw new BlinkFSException($"File: '{program}' Does not exist, or is not in build.toml OR the path");
-
-            TryHandleFallback(program, combinedArgs);
-
-
-            StartProgram(program, combinedArgs);
-
+            StartProgram(program, properArgs.ToArray());
         }
     }
 
@@ -85,18 +86,6 @@ public static class ProgramRunner
     /// </summary>
     public static void StartProgram(string name, string[] args)
     {
-        args = PrepareArguments(args);
-
-        string combinedArgs = string.Empty;
-        if (args != null)
-        {
-            for (int i = 0; i < args.Length; i++)
-            {
-                combinedArgs += $" {args[i]}";
-            }
-        }
-
-        // if a program has .\ or ./ it will run the version specified instead of the path version
         if (name.Contains("." + Config.PathSeparator))
         {
             name = BlinkFS.MakePathAbsolute(name);
@@ -106,20 +95,20 @@ public static class ProgramRunner
             name = BlinkFS.GetProgramOnPathsFilePath(name);
         }
 
-        Process proc = new Process
-        {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = name,
-                Arguments = $"{combinedArgs}",
-                UseShellExecute = false,
-            }
-        };
 
+        ProcessStartInfo psi = new ProcessStartInfo();
+        psi.FileName = name;
+        foreach (string arg in args)
+        {
+            psi.ArgumentList.Add(arg);
+        }
+        psi.UseShellExecute = false;
+
+
+        Process proc = new Process();
+        proc.StartInfo = psi;
         proc.Start();
         proc.WaitForExit();
-        proc.Dispose();
-        Environment.Exit(0);
     }
 
 
@@ -158,7 +147,8 @@ public static class ProgramRunner
         string shellExe = (string)TOMLHandler.GetVarFromConfigTOML(Config.ShellExe);
         string ShellExtraArgs = (string)TOMLHandler.GetVarFromConfigTOML(Config.ShellExtraArgs);
         List<string> shellArgs = args.ToList();
-        Console.WriteLine(shellExe);
+
+
         shellArgs.Insert(0, name);
         shellArgs.Insert(0, ShellExtraArgs);
         StartProgram(shellExe, shellArgs.ToArray());
