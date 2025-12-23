@@ -17,7 +17,6 @@ static class BlinkFS
 
     /// <summary>
     /// reads the entire file. 
-    /// 
     /// </summary>
     /// <param name="filePath"></param>
     /// <returns>the whole file in one string</returns>
