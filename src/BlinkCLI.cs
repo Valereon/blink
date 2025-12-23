@@ -84,19 +84,19 @@ class BlinkCLI
     public class PathAdd
     {
         [CliArgument(Description = "The path you want to add to the blink path")]
-        public string Path { get; set; } = string.Empty;
+        public string newPath { get; set; } = string.Empty;
 
         public void Run()
         {
 
             BlinkFS.LoadFileSystem();
-            if (Path == null || Path == string.Empty)
+            if (newPath == null || newPath == string.Empty)
                 throw new BlinkException("program path cannot be null or empty");
 
 
-            BlinkFS.AddProgramToPath(BlinkFS.MakePathRelative(Path));
+            BlinkFS.AddProgramToPath(Path.GetRelativePath(Config.FileSystemRoot, newPath));
             TOMLHandler.PutPathToTOML();
-            Console.WriteLine($"'{Path}' successfully added to the path. You can now use it as '{System.IO.Path.GetFileName(Path)}' in commands and args");
+            Console.WriteLine($"'{newPath}' successfully added to the path. You can now use it as '{Path.GetFileName(newPath)}' in commands and args");
 
 
         }
@@ -110,7 +110,6 @@ class BlinkCLI
         public void Run()
         {
             BlinkFS.LoadFileSystem();
-            BlinkFS.IsBlinkFileStructureValid();
             Console.WriteLine("Everything is verified!");
         }
     }
@@ -147,7 +146,7 @@ class BlinkCLI
         {
             BlinkFS.LoadFileSystem();
 
-            foreach (string var in BlinkFS.path)
+            foreach (string var in BlinkFS.GetPathList())
             {
                 Console.WriteLine(var);
             }

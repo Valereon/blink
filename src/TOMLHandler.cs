@@ -12,8 +12,8 @@ static class TOMLHandler
     public static void GetPathFromTOML()
     {
         TomlArray path = (TomlArray)GetVarFromConfigTOML(Config.PathKey);
-        List<string> pathVars = TOMLArrayToList(path);
-        BlinkFS.path = pathVars;
+        BlinkFS.GetPathList().Clear();
+        BlinkFS.GetPathList().AddRange(TOMLArrayToList(path));
     }
 
     /// <summary>
@@ -22,7 +22,7 @@ static class TOMLHandler
     public static void PutPathToTOML()
     {
         TomlTable toml = GetConfigTOML();
-        toml[Config.PathKey] = BlinkFS.path;
+        toml[Config.PathKey] = BlinkFS.GetPathList();
         PutTOML(toml, Config.ConfigTomlPath);
     }
 
@@ -82,7 +82,6 @@ static class TOMLHandler
         return GetVarFromTOML(GetBuildTOML(), var, "build");
     }
 
-
     /// <summary>
     /// Does the provided key exist in the provided TOML
     /// </summary>
@@ -122,7 +121,7 @@ static class TOMLHandler
         }
         catch (TomlException)
         {
-            throw new BlinkTOMLException(@$"TOML: '{path}' is invalid, it most likely has an invalid character in one of its strings, probably an escape character in a path. Please always use \\ in paths");
+            throw new BlinkTOMLException($"TOML: '{path}' is invalid, it most likely One of these reasons.\nIt has an invalid character in one of its strings, probably an escape character in a path. Please always use \\\\ in paths.\nParams are seperated by list indices in the build.toml Like\n\tcommand = [\"ls\", \"-l\"]");
         }
     }
 
@@ -136,6 +135,25 @@ static class TOMLHandler
         string textTOML = Toml.FromModel(tomlTable);
         BlinkFS.WriteFile(path, textTOML);
     }
+
+    public static void PutConfigTOMLWithTable(TomlTable configTable)
+    {
+        string textTOML = Toml.FromModel(configTable);
+        BlinkFS.WriteFile(Config.ConfigTomlPath, textTOML);
+    }
+    public static void PutBuildTOMLWithTable(TomlTable buildTable)
+    {
+        string textTOML = Toml.FromModel(buildTable);
+        BlinkFS.WriteFile(Config.BuildTomlPath, textTOML);
+    }
+
+    public static void AddKeyToBuildTOML<T>(string key, T value)
+    {
+        TomlTable build = GetBuildTOML();
+        build[key] = value!;
+        PutBuildTOMLWithTable(build);
+    }
+
 
     /// <summary>
     /// Takes a TOML array and converts to csharp list

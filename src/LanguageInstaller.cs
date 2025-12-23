@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Net;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using Tomlyn.Model;
 
 public static class LanguageInstaller
@@ -19,73 +20,64 @@ public static class LanguageInstaller
                 break;
         }
     }
-    private static void DownloadFile(string url, string pathToSave)
-    {
-        using (WebClient wc = new WebClient())
-        {
-            try
-            {
-                wc.DownloadFile(url, pathToSave);
-            }
-            catch
-            {
-                BlinkFS.DeleteDirectory(pathToSave);
-                throw new BlinkDownloadException($"Url '{url}' has run into an issue, please try again with a different url");
-            }
-        }
-    }
+
     //https://www.python.org/ftp/python/3.13.6/python-3.13.6-embed-amd64.zip
     //windows!
     private static void InstallPython(string version)
     {
         string folderPath = BlinkFS.InitLanguageFolder(LanguageSupport.Language.Python, version);
-        string fileName = folderPath + @$"{Config.PathSeparator}Python-{version}.zip";
+        string pythonFilePath = folderPath + @$"{Config.PathSeparator}Python-{version}.zip";
+        string pipFileName = "pip.pyz";
+        string pythonFileName = "python.exe";
 
-
-        DownloadFile($"https://www.python.org/ftp/python/{version}/python-{version}-embed-amd64.zip", fileName);
+        BlinkFS.DownloadFile($"https://www.python.org/ftp/python/{version}/python-{version}-embed-amd64.zip", pythonFilePath);
         // python
-        ZipFile.ExtractToDirectory(fileName, $"{folderPath}");
-        BlinkFS.DeleteFile(fileName);
+        ZipFile.ExtractToDirectory(pythonFilePath, $"{folderPath}");
+        BlinkFS.DeleteFile(pythonFilePath);
+
 
         //create pip folder and shove pip in it
-        //.\.blink\bin\Python-3.13.6\pip\
-        DownloadFile($"https://bootstrap.pypa.io/pip/pip.pyz", $"{folderPath}{Config.PathSeparator}pip.pyz");
-        BlinkFS.CreateDirectory($"{folderPath}{Config.PathSeparator}pip{Config.PathSeparator}");
-        File.Move($"{folderPath}{Config.PathSeparator}pip.pyz", $"{folderPath}{Config.PathSeparator}pip{Config.PathSeparator}pip.pyz");
+        //.\.blink\bin\Python-3.13.6\pip.pyz
+        string pipDownloadLocation = Path.Join(folderPath, pipFileName);
+        BlinkFS.DownloadFile($"https://bootstrap.pypa.io/pip/pip.pyz", pipDownloadLocation);
 
+        //shove pip in a folder
+        // .\.blink\bin\Python-3.13.6\pip\pip.pyz
+        string pipDirectory = Path.Join(folderPath, "pip");
+        BlinkFS.CreateDirectory(pipDirectory);
 
-
+        string pipPath = Path.Join(pipDirectory, pipFileName);
+        File.Move(pipDownloadLocation, pipPath);
 
         //.\.blink\bin\Python-3.13.6\python.exe
-        string relPython = BlinkFS.MakePathRelative(folderPath + @$"{Config.PathSeparator}python.exe");
+        string pythonPath = Path.Join(folderPath, pythonFileName);
         //.\.blink\bin\Python-3.13.6\pip\pip.pyz
-        string relPip = BlinkFS.MakePathRelative(folderPath + @$"{Config.PathSeparator}pip{Config.PathSeparator}pip.pyz");
+
 
 
         //.\.blink\bin\Python-3.13.6\python313._pth
         // take the dumb version and turn it into python313 from 3.13.6
         // this is needed to recognize site packages for python, for per install shit.
-        string pthFileVersion = System.Text.RegularExpressions.Regex.Replace(version, @"\b(\d+)\.(\d+)\.\d+\b", "$1$2");
-        EditPythonPathFile(folderPath + $"{Config.PathSeparator}python{pthFileVersion}._pth");
+        string pthFileVersion = Regex.Replace(version, @"\b(\d+)\.(\d+)\.\d+\b", "$1$2");
+        string pthFilePath = Path.Join(folderPath, "python", $"{pthFileVersion}._pth");
+        EditPythonPathFile(folderPath + pthFilePath);
 
-        TomlTable table = TOMLHandler.GetBuildTOML();
 
-        if (BlinkFS.IsProgramInPath("python.exe") == false && BlinkFS.IsProgramInPath("pip.pyz") == false)
+        if (BlinkFS.IsProgramInPath(pythonFileName) == false && BlinkFS.IsProgramInPath(pipFileName) == false)
         {
-            BlinkFS.AddProgramToPath(relPip);
-            BlinkFS.AddProgramToPath(relPython);
+            BlinkFS.AddProgramToPath(pipPath);
+            BlinkFS.AddProgramToPath(pythonPath);
 
 
-            List<string> buildList = [relPython, relPip];
+            List<string> buildList = [pythonPath, pipPath];
 
-            table.Add("pip", buildList);
+            TOMLHandler.AddKeyToBuildTOML("pip", buildList);
 
-            TOMLHandler.PutTOML(table, Config.BuildTomlPath);
             Console.WriteLine($"Python {version} and Pip {version} were added to the path! you can use them like 'blink run python -a main.py' and 'blink run pip -a install pygame'");
         }
         else
         {
-            ResolveAlreadyOnPathConflict("python", version, "pip", relPython, relPip, $"pip{version}", [relPython, relPip]);
+            ResolveAlreadyOnPathConflict("python", version, "pip", pythonPath, pipPath, $"pip{version}", [pythonPath, pipPath]);
         }
         TOMLHandler.PutPathToTOML();
     }
@@ -97,7 +89,7 @@ public static class LanguageInstaller
         string folderPath = BlinkFS.InitLanguageFolder(LanguageSupport.Language.NodeJS, version);
         string fileName = folderPath + @$"{Config.PathSeparator}NodeJS-{version}.zip";
         Console.WriteLine(fileName);
-        DownloadFile($"https://nodejs.org/dist/v{version}/node-v{version}-win-x64.zip", fileName);
+        BlinkFS.DownloadFile($"https://nodejs.org/dist/v{version}/node-v{version}-win-x64.zip", fileName);
 
         ZipFile.ExtractToDirectory(fileName, $"{folderPath}");
         BlinkFS.DeleteFile(fileName);
@@ -107,11 +99,8 @@ public static class LanguageInstaller
 
         if (BlinkFS.IsProgramInPath("node.exe") == false && BlinkFS.IsProgramInPath("npm.cmd") == false)
         {
-
-
             BlinkFS.AddProgramToPath(relNode);
             BlinkFS.AddProgramToPath(relNPM);
-
         }
         else
         {

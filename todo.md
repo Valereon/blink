@@ -6,13 +6,11 @@ add system path support
 add remove from path command
 
 
-add blink getting added to the project for packagin
+add blink getting added to the project for packaging
 
 add an export command 
 
 add the ability to chain build.toml commands? cause you cant do that currently
-
-
 
 
 ## Med priority

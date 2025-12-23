@@ -13,7 +13,9 @@ public static class Config
     public const string ShellExe = "shellExecutable";
     public const string ShellExtraArgs = "extraShellArgs";
 
-    public const string PathModWindows = @"set PATH=";
+    public const string pathKeyword = @"PATH=";
+    public const string pathSetKeyword = @"set";
+    public const string pathMode = "pathMode";
 
     public static string PathSeparator = @"\";
 
@@ -56,6 +58,8 @@ public static class Config
     # 0: NONE will not append to your path at all
     # 1: PREPEND to your path so it will "blinkPath;%PATH%"
     # 2: POSTPEND to your path "%PATH%;blinkPath;"
+
+    pathMode = 0
     """;
 
 
