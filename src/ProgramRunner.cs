@@ -1,9 +1,13 @@
+using System.CommandLine;
 using System.Data;
 using System.Diagnostics;
+using System.Linq;
 using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
+using Microsoft.VisualBasic;
 using Tomlyn;
 using Tomlyn.Model;
+using Tomlyn.Syntax;
 
 /// <summary>
 /// This class handles running processes as well as preparing and cleaning arguments
@@ -57,6 +61,28 @@ public static class ProgramRunner
         return newSplit;
     }
 
+    private static void TOMLChainRunCheck(List<string> args)
+    {
+        List<string> commands = TOMLHandler.GetAllCommandsInBuildTOML();
+        //TODO: fix this with linq
+        
+        // python3.3 = ".bin\python\python.exe"
+        // runImp = "src\python\import.py"
+        // fullRunImp = "python3.3 runImp"
+
+
+        
+        for (int i = 0; i < args.Count; i++)
+        {
+            if (commands.Contains(args[i]))
+            {
+                
+            }
+        }
+        
+
+    }
+
     /// <summary>
     /// runs the pre-specified command in build.toml returns true if command is run and false if it couldnt find one
     /// </summary>
@@ -65,7 +91,6 @@ public static class ProgramRunner
         List<string> properArgs = PrepareTOMLArgsRun(command, args);
         string program = properArgs[0];
         properArgs.Remove(program);
-        Console.WriteLine(program);
 
 
         if (BlinkFS.IsProgramInPath(program))

@@ -24,7 +24,7 @@ class BlinkCLI
     {
         public void Run()
         {
-
+            //TODO: shove this into blinkfs?
             BlinkFS.CreateDirectory(BlinkFS.MakePathAbsolute(@".\.blink"));
             BlinkFS.CreateDirectory(BlinkFS.MakePathAbsolute(@".\.blink\bin"));
             BlinkFS.CreateDirectory(BlinkFS.MakePathAbsolute(@".\.blink\custom"));
@@ -64,14 +64,10 @@ class BlinkCLI
                 ProgramRunner.RunInShell(Name, Args);
                 return;
             }
-
             if (ProgramRunner.TryRunFromBuildTOML(Name, Args))
                 return;
-                
             if (ProgramRunner.TryRunBlink(Name, Args))
                 return;
-
-
             if (ProgramRunner.TryHandleFallback(Name, Args))
                 return;
 
@@ -105,6 +101,7 @@ class BlinkCLI
     [CliCommand(Name = "verify", Description ="Automatically fixes fixable issues in blink")]
     public class Verify
     {
+        //TODO: make this literally any more useful
         // [CliOption(Name = "Fix", Required = false, Description = "Automatically fixes fixable issues in blink")]
         // public bool Fix { get; set; } = false;
         public void Run()
@@ -132,7 +129,7 @@ class BlinkCLI
                 throw new BlinkException("LangAdd: Language Cannot be null");
 
             if (Version == null || Version == string.Empty)
-                throw new BlinkException("LangAdd: Version cannot be null");
+                throw new BlinkException("LangAdd: Version cannot be null.\nmake sure your numbers match the languages versioning system so '3.9.1' for python");
 
             LanguageSupport.Language lang = LanguageSupport.StringToEnumLang(Language);
             LanguageInstaller.InstallLanguage(lang, Version);

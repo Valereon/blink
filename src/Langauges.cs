@@ -17,6 +17,13 @@ public static class LanguageSupport
             case "nodejs":
                 return Language.NodeJS;
         }
+        //TODO: make this actually list out the damn languages at what they are supposed to be accept
         throw new BlinkException($"'{langauge}' is not supported check Readme To see supported languages");
     }
+}
+
+public class LanguageConfig
+{
+    public LanguageSupport.Language lang;
+    // public 
 }
