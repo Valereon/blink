@@ -1,13 +1,6 @@
-using System.CommandLine;
-using System.Data;
 using System.Diagnostics;
-using System.Linq;
-using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
-using Microsoft.VisualBasic;
-using Tomlyn;
 using Tomlyn.Model;
-using Tomlyn.Syntax;
 
 /// <summary>
 /// This class handles running processes as well as preparing and cleaning arguments
@@ -23,15 +16,6 @@ public static class ProgramRunner
             return Array.Empty<string>();
 
 
-        return MakeArgsAbsolute(arguments);
-        // return arguments;
-    }
-
-    /// <summary>
-    /// contains repetitive logic from PrepareArguments() and makes args absolute while ignoring flags
-    /// </summary>
-    private static string[] MakeArgsAbsolute(string[] arguments)
-    {
         for (int i = 0; i < arguments.Length; i++)
         {
             //no file extension so skip. its an argument or a folder?
@@ -45,7 +29,9 @@ public static class ProgramRunner
 
         }
         return arguments;
+        // return arguments;
     }
+
 
     private static List<string> PrepareTOMLArgsRun(string command, string[] args)
     {
@@ -65,21 +51,21 @@ public static class ProgramRunner
     {
         List<string> commands = TOMLHandler.GetAllCommandsInBuildTOML();
         //TODO: fix this with linq
-        
+
         // python3.3 = ".bin\python\python.exe"
         // runImp = "src\python\import.py"
         // fullRunImp = "python3.3 runImp"
 
 
-        
+
         for (int i = 0; i < args.Count; i++)
         {
             if (commands.Contains(args[i]))
             {
-                
+
             }
         }
-        
+
 
     }
 

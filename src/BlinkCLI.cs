@@ -1,4 +1,5 @@
-﻿using DotMake.CommandLine;
+﻿using System.Runtime.CompilerServices;
+using DotMake.CommandLine;
 
 
 // This CLI library which handles most of the hard parts, has to be run like this. The BlinkCLI is a holder class and each internal class is a command.
@@ -11,6 +12,20 @@ catch (BlinkException ex)
     Console.WriteLine(ex.Message);
     Environment.Exit(1);
 }
+
+
+abstract class CLICommandBase
+{
+    protected BlinkFS blinkFS;
+    protected 
+
+    public CLICommandBase()
+    {
+        blinkFS = new BlinkFS();
+    }
+}
+
+
 /// <summary>
 /// The Class that contains all command line commands using dot makeCLI
 /// </summary>
@@ -18,18 +33,17 @@ catch (BlinkException ex)
 class BlinkCLI
 {
 
-
     [CliCommand(Description = "Inits a blink project in the current directory")]
-    public class Init
+    public class Init : CLICommandBase
     {
         public void Run()
         {
             //TODO: shove this into blinkfs?
-            BlinkFS.CreateDirectory(BlinkFS.MakePathAbsolute(@".\.blink"));
-            BlinkFS.CreateDirectory(BlinkFS.MakePathAbsolute(@".\.blink\bin"));
-            BlinkFS.CreateDirectory(BlinkFS.MakePathAbsolute(@".\.blink\custom"));
-            BlinkFS.WriteFile(BlinkFS.MakePathAbsolute(@".\.blink\config.toml"), Config.BaseConfigTOML);
-            BlinkFS.WriteFile(BlinkFS.MakePathAbsolute(@".\.blink\build.toml"), Config.BaseBuildTOML);
+            blinkFS.CreateDirectory(blinkFS.MakePathAbsolute(@".\.blink"));
+            blinkFS.CreateDirectory(blinkFS.MakePathAbsolute(@".\.blink\bin"));
+            blinkFS.CreateDirectory(blinkFS.MakePathAbsolute(@".\.blink\custom"));
+            blinkFS.WriteFile(blinkFS.MakePathAbsolute(@".\.blink\config.toml"), Config.BaseConfigTOML);
+            blinkFS.WriteFile(blinkFS.MakePathAbsolute(@".\.blink\build.toml"), Config.BaseBuildTOML);
             Console.WriteLine("Project Init successful");
         }
 
@@ -98,7 +112,7 @@ class BlinkCLI
         }
     }
 
-    [CliCommand(Name = "verify", Description ="Automatically fixes fixable issues in blink")]
+    [CliCommand(Name = "verify", Description = "Automatically fixes fixable issues in blink")]
     public class Verify
     {
         //TODO: make this literally any more useful
@@ -113,7 +127,7 @@ class BlinkCLI
 
 
 
-    [CliCommand(Name = "langAdd", Description ="Installs a standalone runtime of a specified supported language and version")]
+    [CliCommand(Name = "langAdd", Description = "Installs a standalone runtime of a specified supported language and version")]
     public class LangAdd
     {
         [CliArgument(Name = "language", Description = "the name of the language you want to install")]
@@ -136,7 +150,7 @@ class BlinkCLI
         }
     }
 
-    [CliCommand(Name = "listPath", Description ="lists all elements on the blink path")]
+    [CliCommand(Name = "listPath", Description = "lists all elements on the blink path")]
     public class ListPath
     {
         public void Run()
@@ -151,7 +165,7 @@ class BlinkCLI
         }
     }
 
-    [CliCommand(Name = "listBuildCommands", Description ="lists the name of all commands in the build.toml")]
+    [CliCommand(Name = "listBuildCommands", Description = "lists the name of all commands in the build.toml")]
     public class ListBuildCommands
     {
         public void Run()

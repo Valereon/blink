@@ -18,7 +18,7 @@ add the ability to chain build.toml commands? cause you cant do that currently (
 
 
 ## Med priority
-change langugae installer to use a toml based language support system to make adding new language support easy as hell
+change langugae installer to use a class instance based system so that its easier to make data classes
 
 
 
