@@ -38,6 +38,10 @@ make a command or toggle in config to when exporting it will copy all binaries o
 - maybe just a list of whats on their path
 
 
+
+# be able to use it as an export tool in general
+like you dont need to start a blink project to have the benefits, you would find a way for each language to find all the packges a program is using and copy them over along with the codebase, this seems really fucking hard but could be cool as another really long term far future goal
+
 ## the finale
 Make a shell wrapper that gets generated so that when you run "blink activate cpp" or whatever blink has a list of where all the projects are and their names so that when you activate an enviroment it can either activate in place and will have a prefix like pip venv
 
