@@ -25,11 +25,11 @@ class BlinkCLI
         public void Run()
         {
 
-            BlinkFS.CreateDirectory(BlinkFS.MakePathAbsolute(@".\.blink"));
-            BlinkFS.CreateDirectory(BlinkFS.MakePathAbsolute(@".\.blink\bin"));
-            BlinkFS.CreateDirectory(BlinkFS.MakePathAbsolute(@".\.blink\custom"));
-            BlinkFS.WriteFile(BlinkFS.MakePathAbsolute(@".\.blink\config.toml"), Config.BaseConfigTOML);
-            BlinkFS.WriteFile(BlinkFS.MakePathAbsolute(@".\.blink\build.toml"), Config.BaseBuildTOML);
+            BlinkFS.CreateDirectory(Path.GetFullPath(@".\.blink"));
+            BlinkFS.CreateDirectory(Path.GetFullPath(@".\.blink\bin"));
+            BlinkFS.CreateDirectory(Path.GetFullPath(@".\.blink\custom"));
+            BlinkFS.WriteFile(Path.GetFullPath(@".\.blink\config.toml"), Config.BaseConfigTOML);
+            BlinkFS.WriteFile(Path.GetFullPath(@".\.blink\build.toml"), Config.BaseBuildTOML);
             Console.WriteLine("Project Init successful");
         }
 
@@ -67,7 +67,7 @@ class BlinkCLI
 
             if (ProgramRunner.TryRunFromBuildTOML(Name, Args))
                 return;
-                
+
             if (ProgramRunner.TryRunBlink(Name, Args))
                 return;
 
@@ -97,12 +97,10 @@ class BlinkCLI
             BlinkFS.AddProgramToPath(Path.GetRelativePath(Config.FileSystemRoot, newPath));
             TOMLHandler.PutPathToTOML();
             Console.WriteLine($"'{newPath}' successfully added to the path. You can now use it as '{Path.GetFileName(newPath)}' in commands and args");
-
-
         }
     }
 
-    [CliCommand(Name = "verify", Description ="Automatically fixes fixable issues in blink")]
+    [CliCommand(Name = "verify", Description = "Automatically fixes fixable issues in blink")]
     public class Verify
     {
         // [CliOption(Name = "Fix", Required = false, Description = "Automatically fixes fixable issues in blink")]
@@ -116,7 +114,7 @@ class BlinkCLI
 
 
 
-    [CliCommand(Name = "langAdd", Description ="Installs a standalone runtime of a specified supported language and version")]
+    [CliCommand(Name = "langAdd", Description = "Installs a standalone runtime of a specified supported language and version")]
     public class LangAdd
     {
         [CliArgument(Name = "language", Description = "the name of the language you want to install")]
@@ -139,7 +137,7 @@ class BlinkCLI
         }
     }
 
-    [CliCommand(Name = "listPath", Description ="lists all elements on the blink path")]
+    [CliCommand(Name = "listPath", Description = "lists all elements on the blink path")]
     public class ListPath
     {
         public void Run()
@@ -154,7 +152,7 @@ class BlinkCLI
         }
     }
 
-    [CliCommand(Name = "listBuildCommands", Description ="lists the name of all commands in the build.toml")]
+    [CliCommand(Name = "listBuildCommands", Description = "lists the name of all commands in the build.toml")]
     public class ListBuildCommands
     {
         public void Run()
