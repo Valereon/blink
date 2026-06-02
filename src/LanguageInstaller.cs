@@ -1,10 +1,8 @@
 using System.IO.Compression;
-using System.Net;
-using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Tomlyn.Model;
 
-public static class LanguageInstaller
+public class LanguageInstaller
 {
 
 
@@ -31,7 +29,7 @@ public static class LanguageInstaller
         string pythonFileName = "python.exe";
 
         BlinkFS.DownloadFile($"https://www.python.org/ftp/python/{version}/python-{version}-embed-amd64.zip", pythonFilePath);
-        // python
+        // python 
         ZipFile.ExtractToDirectory(pythonFilePath, $"{folderPath}");
         BlinkFS.DeleteFile(pythonFilePath);
 
@@ -153,6 +151,4 @@ public static class LanguageInstaller
 
         BlinkFS.WriteFile(filePath, file);
     }
-
-
 }

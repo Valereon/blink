@@ -1,4 +1,5 @@
-﻿using DotMake.CommandLine;
+﻿using System.Runtime.CompilerServices;
+using DotMake.CommandLine;
 
 
 // This CLI library which handles most of the hard parts, has to be run like this. The BlinkCLI is a holder class and each internal class is a command.
@@ -11,6 +12,20 @@ catch (BlinkException ex)
     Console.WriteLine(ex.Message);
     Environment.Exit(1);
 }
+
+
+abstract class CLICommandBase
+{
+    protected BlinkFS blinkFS;
+    protected 
+
+    public CLICommandBase()
+    {
+        blinkFS = new BlinkFS();
+    }
+}
+
+
 /// <summary>
 /// The Class that contains all command line commands using dot makeCLI
 /// </summary>
@@ -18,18 +33,17 @@ catch (BlinkException ex)
 class BlinkCLI
 {
 
-
     [CliCommand(Description = "Inits a blink project in the current directory")]
-    public class Init
+    public class Init : CLICommandBase
     {
         public void Run()
         {
-
-            BlinkFS.CreateDirectory(Path.GetFullPath(@".\.blink"));
-            BlinkFS.CreateDirectory(Path.GetFullPath(@".\.blink\bin"));
-            BlinkFS.CreateDirectory(Path.GetFullPath(@".\.blink\custom"));
-            BlinkFS.WriteFile(Path.GetFullPath(@".\.blink\config.toml"), Config.BaseConfigTOML);
-            BlinkFS.WriteFile(Path.GetFullPath(@".\.blink\build.toml"), Config.BaseBuildTOML);
+            //TODO: shove this into blinkfs?
+            blinkFS.CreateDirectory(blinkFS.MakePathAbsolute(@".\.blink"));
+            blinkFS.CreateDirectory(blinkFS.MakePathAbsolute(@".\.blink\bin"));
+            blinkFS.CreateDirectory(blinkFS.MakePathAbsolute(@".\.blink\custom"));
+            blinkFS.WriteFile(blinkFS.MakePathAbsolute(@".\.blink\config.toml"), Config.BaseConfigTOML);
+            blinkFS.WriteFile(blinkFS.MakePathAbsolute(@".\.blink\build.toml"), Config.BaseBuildTOML);
             Console.WriteLine("Project Init successful");
         }
 
@@ -64,14 +78,10 @@ class BlinkCLI
                 ProgramRunner.RunInShell(Name, Args);
                 return;
             }
-
             if (ProgramRunner.TryRunFromBuildTOML(Name, Args))
                 return;
-
             if (ProgramRunner.TryRunBlink(Name, Args))
                 return;
-
-
             if (ProgramRunner.TryHandleFallback(Name, Args))
                 return;
 
@@ -103,6 +113,7 @@ class BlinkCLI
     [CliCommand(Name = "verify", Description = "Automatically fixes fixable issues in blink")]
     public class Verify
     {
+        //TODO: make this literally any more useful
         // [CliOption(Name = "Fix", Required = false, Description = "Automatically fixes fixable issues in blink")]
         // public bool Fix { get; set; } = false;
         public void Run()
@@ -130,7 +141,7 @@ class BlinkCLI
                 throw new BlinkException("LangAdd: Language Cannot be null");
 
             if (Version == null || Version == string.Empty)
-                throw new BlinkException("LangAdd: Version cannot be null");
+                throw new BlinkException("LangAdd: Version cannot be null.\nmake sure your numbers match the languages versioning system so '3.9.1' for python");
 
             LanguageSupport.Language lang = LanguageSupport.StringToEnumLang(Language);
             LanguageInstaller.InstallLanguage(lang, Version);

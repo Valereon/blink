@@ -1,8 +1,5 @@
-using System.Data;
 using System.Diagnostics;
-using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
-using Tomlyn;
 using Tomlyn.Model;
 
 /// <summary>
@@ -19,15 +16,6 @@ public static class ProgramRunner
             return Array.Empty<string>();
 
 
-        return MakeArgsAbsolute(arguments);
-        // return arguments;
-    }
-
-    /// <summary>
-    /// contains repetitive logic from PrepareArguments() and makes args absolute while ignoring flags
-    /// </summary>
-    private static string[] MakeArgsAbsolute(string[] arguments)
-    {
         for (int i = 0; i < arguments.Length; i++)
         {
             //no file extension so skip. its an argument or a folder?
@@ -41,7 +29,9 @@ public static class ProgramRunner
 
         }
         return arguments;
+        // return arguments;
     }
+
 
     private static List<string> PrepareTOMLArgsRun(string command, string[] args)
     {
@@ -57,6 +47,28 @@ public static class ProgramRunner
         return newSplit;
     }
 
+    private static void TOMLChainRunCheck(List<string> args)
+    {
+        List<string> commands = TOMLHandler.GetAllCommandsInBuildTOML();
+        //TODO: fix this with linq
+
+        // python3.3 = ".bin\python\python.exe"
+        // runImp = "src\python\import.py"
+        // fullRunImp = "python3.3 runImp"
+
+
+
+        for (int i = 0; i < args.Count; i++)
+        {
+            if (commands.Contains(args[i]))
+            {
+
+            }
+        }
+
+
+    }
+
     /// <summary>
     /// runs the pre-specified command in build.toml returns true if command is run and false if it couldnt find one
     /// </summary>
@@ -65,7 +77,6 @@ public static class ProgramRunner
         List<string> properArgs = PrepareTOMLArgsRun(command, args);
         string program = properArgs[0];
         properArgs.Remove(program);
-        Console.WriteLine(program);
 
 
         if (BlinkFS.IsProgramInPath(program))
